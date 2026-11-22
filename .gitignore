@@ -22,7 +22,6 @@ coverage*.xml
 packages/
 
 # Local tooling caches
-.gradle/
 .vs4w/
 
 # OS noise
@@ -40,3 +39,17 @@ settings.local.json
 
 # NOTE: upstream\Ehviewer_CN_SXJ is a read-only reference checkout with its own .git.
 # Never commit it into this repository; never modify it.
+# Upstream, packaging, editor, logs & local databases
+upstream/
+AppPackages/
+BundleArtifacts/
+*.msix
+*.appx
+*.msixbundle
+*.cer
+publish/
+.vscode/
+*.log
+*.binlog
+*.db
+*.sqlite*
