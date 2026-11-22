@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+    "used": 0,
+    "total": 0,
+    "resetCost": 0,
+    "resetCostText": "0 Gp",
+    "fromGalleryVisits": "0 Gp",
+    "fromTorrentCompletions": "0 Gp",
+    "fromArchiveDownloads": "0 Gp",
+    "fromHentaiAtHome": "0 Gp",
+    "currentModerationPower": "6",
+    "imageLimits": "res_2"
+  }
+}

@@ -1,0 +1,102 @@
+<Page
+    x:Class="EhViewer.Desktop.Views.GalleryInfoPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EhViewer.Desktop.Controls"
+    xmlns:views="using:EhViewer.Desktop.Views"
+    Background="{StaticResource EhPageBackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:MaterialToolbar
+            x:Name="Toolbar"
+            Title="画廊详情信息"
+            ShowBackButton="True"
+            BackRequested="OnBackRequested">
+            <controls:MaterialToolbar.RightActions>
+                <Button
+                    Style="{StaticResource EhToolbarIconButtonStyle}"
+                    ToolTipService.ToolTip="复制全部信息"
+                    Click="OnCopyAllClick">
+                    <FontIcon Glyph="&#xE8C8;" FontSize="16" />
+                </Button>
+            </controls:MaterialToolbar.RightActions>
+        </controls:MaterialToolbar>
+
+        <ScrollViewer Grid.Row="1" Padding="24,16,24,24">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource EhMaterialCardStyle}" Padding="6">
+                <ItemsRepeater x:Name="InfoRowsRepeater">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="0" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="views:GalleryInfoRow">
+                            <Grid
+                                Padding="14,11"
+                                BorderBrush="{StaticResource EhDividerBrush}"
+                                BorderThickness="0,0,0,1"
+                                Background="Transparent"
+                                Tag="{x:Bind}"
+                                Tapped="OnRowTapped">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="136" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock
+                                    Text="{x:Bind Label}"
+                                    FontSize="13"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource EhTextSecondaryBrush}"
+                                    VerticalAlignment="Center" />
+
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{x:Bind Value}"
+                                    FontSize="13"
+                                    Foreground="{StaticResource EhTextPrimaryBrush}"
+                                    TextWrapping="Wrap"
+                                    IsTextSelectionEnabled="True"
+                                    VerticalAlignment="Center" />
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="8,0,0,0">
+                                    <Button
+                                        Padding="8,4"
+                                        FontSize="12"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Tag="{x:Bind}"
+                                        Click="OnCopyRowClick"
+                                        ToolTipService.ToolTip="复制该项">
+                                        <FontIcon Glyph="&#xE8C8;" FontSize="13" />
+                                    </Button>
+                                    <Button
+                                        Padding="8,4"
+                                        FontSize="12"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Visibility="{x:Bind views:UiHelpers.VisibleIf(IsLink)}"
+                                        Tag="{x:Bind}"
+                                        Click="OnOpenLinkRowClick"
+                                        ToolTipService.ToolTip="打开链接">
+                                        <FontIcon Glyph="&#xE8A7;" FontSize="13" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

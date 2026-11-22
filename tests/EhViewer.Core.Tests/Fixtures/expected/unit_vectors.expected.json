@@ -1,0 +1,399 @@
+{
+  "galleryDetailUrlParser": [
+    {
+      "url": "https://e-hentai.org/g/123456/abcdef1234/",
+      "strict": false,
+      "result": {
+        "token": "abcdef1234",
+        "gid": 123456
+      }
+    },
+    {
+      "url": "https://e-hentai.org/g/123456/abcdef1234/",
+      "strict": true,
+      "result": {
+        "token": "abcdef1234",
+        "gid": 123456
+      }
+    },
+    {
+      "url": "https://exhentai.org/g/987654/0123456789?p=2",
+      "strict": false,
+      "result": {
+        "token": "0123456789",
+        "gid": 987654
+      }
+    },
+    {
+      "url": "https://exhentai.org/g/987654/0123456789?p=2",
+      "strict": true,
+      "result": {
+        "token": "0123456789",
+        "gid": 987654
+      }
+    },
+    {
+      "url": "http://g.e-hentai.org/g/123456/abcdef1234",
+      "strict": false,
+      "result": {
+        "token": "abcdef1234",
+        "gid": 123456
+      }
+    },
+    {
+      "url": "http://g.e-hentai.org/g/123456/abcdef1234",
+      "strict": true,
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/s/abcdef1234/123456-1",
+      "strict": false,
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/s/abcdef1234/123456-1",
+      "strict": true,
+      "result": null
+    },
+    {
+      "url": "invalid",
+      "strict": false,
+      "result": null
+    },
+    {
+      "url": "invalid",
+      "strict": true,
+      "result": null
+    }
+  ],
+  "galleryPageUrlParser": [
+    {
+      "url": "https://e-hentai.org/s/7e7a4305a4/1366222-3",
+      "strict": false,
+      "result": {
+        "gid": 1366222,
+        "page": 2,
+        "pToken": "7e7a4305a4"
+      }
+    },
+    {
+      "url": "https://e-hentai.org/s/7e7a4305a4/1366222-3",
+      "strict": true,
+      "result": {
+        "gid": 1366222,
+        "page": 2,
+        "pToken": "7e7a4305a4"
+      }
+    },
+    {
+      "url": "https://exhentai.org/s/0123456789/42-1",
+      "strict": false,
+      "result": {
+        "gid": 42,
+        "page": 0,
+        "pToken": "0123456789"
+      }
+    },
+    {
+      "url": "https://exhentai.org/s/0123456789/42-1",
+      "strict": true,
+      "result": {
+        "gid": 42,
+        "page": 0,
+        "pToken": "0123456789"
+      }
+    },
+    {
+      "url": "7e7a4305a4/1366222-3",
+      "strict": false,
+      "result": {
+        "gid": 1366222,
+        "page": 2,
+        "pToken": "7e7a4305a4"
+      }
+    },
+    {
+      "url": "7e7a4305a4/1366222-3",
+      "strict": true,
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/g/123/abc/",
+      "strict": false,
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/g/123/abc/",
+      "strict": true,
+      "result": null
+    }
+  ],
+  "galleryListUrlParser": [
+    {
+      "url": "https://e-hentai.org/",
+      "result": {
+        "mode": 0,
+        "pageIndex": 0,
+        "category": -1,
+        "keyword": null,
+        "advanceSearch": -1,
+        "minRating": -1,
+        "pageFrom": -1,
+        "pageTo": -1,
+        "imagePath": null,
+        "useSimilarityScan": false,
+        "onlySearchCovers": false,
+        "showExpunged": false
+      }
+    },
+    {
+      "url": "https://exhentai.org/?f_search=touhou&f_cats=767&page=3",
+      "result": {
+        "mode": 0,
+        "pageIndex": 0,
+        "category": 256,
+        "keyword": "touhou",
+        "advanceSearch": -1,
+        "minRating": -1,
+        "pageFrom": -1,
+        "pageTo": -1,
+        "imagePath": null,
+        "useSimilarityScan": false,
+        "onlySearchCovers": false,
+        "showExpunged": false
+      }
+    },
+    {
+      "url": "https://e-hentai.org/tag/female:sole+female?next=12345",
+      "result": {
+        "mode": 2,
+        "pageIndex": 0,
+        "category": -1,
+        "keyword": "female:sole female",
+        "advanceSearch": -1,
+        "minRating": -1,
+        "pageFrom": -1,
+        "pageTo": -1,
+        "imagePath": null,
+        "useSimilarityScan": false,
+        "onlySearchCovers": false,
+        "showExpunged": false
+      }
+    },
+    {
+      "url": "https://e-hentai.org/uploader/someone/2",
+      "result": {
+        "mode": 1,
+        "pageIndex": 0,
+        "category": -1,
+        "keyword": "someone",
+        "advanceSearch": -1,
+        "minRating": -1,
+        "pageFrom": -1,
+        "pageTo": -1,
+        "imagePath": null,
+        "useSimilarityScan": false,
+        "onlySearchCovers": false,
+        "showExpunged": false
+      }
+    },
+    {
+      "url": "https://e-hentai.org/doujinshi?f_sname=on&f_stags=on&f_sr=on&f_srdd=4",
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/watched?prev=999",
+      "result": null
+    },
+    {
+      "url": "https://e-hentai.org/popular",
+      "result": null
+    }
+  ],
+  "galleryApiParser": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "gid": 1366222,
+      "token": null,
+      "title": "Sample & Title",
+      "titleJpn": "サンプル <タイトル>",
+      "thumb": "https://ehgt.org/t/00/01/test_l.jpg",
+      "category": 2,
+      "posted": "2023-11-15 06:13",
+      "uploader": "tester",
+      "rating": 4.56,
+      "rated": false,
+      "simpleLanguage": null,
+      "simpleTags": [
+        "language:japanese",
+        "artist:foo"
+      ],
+      "thumbWidth": 0,
+      "thumbHeight": 0,
+      "spanSize": 0,
+      "spanIndex": 0,
+      "spanGroupIndex": 0,
+      "favoriteSlot": -2,
+      "favoriteName": null,
+      "pages": 25
+    }
+  },
+  "galleryTokenApiParser": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": "aaaa1111bb"
+  },
+  "rateGalleryParser": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "rating": 4.72,
+      "ratingCount": 128
+    }
+  },
+  "voteCommentParser": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "id": 555666,
+      "score": 42,
+      "expectVote": 1,
+      "vote": 12
+    }
+  },
+  "getEditCommentParser": {
+    "ok": false,
+    "errorType": "ParseException",
+    "errorMessage": "Can't parse editable comment",
+    "value": null
+  },
+  "getEditCommentParserInvalid": {
+    "ok": false,
+    "errorType": "ParseException",
+    "errorMessage": "Can't parse editable comment",
+    "value": null
+  },
+  "signInParserOk": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": "TestUser"
+  },
+  "signInParserFail": {
+    "ok": false,
+    "errorType": "EhException",
+    "errorMessage": "Username or password incorrect",
+    "value": null
+  },
+  "comicInfoParser": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "token": "deadbeef00",
+      "gid": 222333
+    }
+  },
+  "ehConfig": {
+    "customUconfig": "uh_y-xr_a-rx_0-ry_0-tl_r-ar_0-dm_t-prn_y-cats_320-fs_p-xns_0-xl_0,1024-rc_2-lt_m-ts_l-tr_5-cs_a-sc_0-to_a-pn_1-hp_-hk_-tf_n-oi_n-qb_n-ms_n-mt_n",
+    "defaultUconfig": "uh_y-xr_a-rx_0-ry_0-tl_r-ar_0-dm_l-prn_y-cats_0-fs_f-xns_0-xl_-rc_0-lt_m-ts_l-tr_2-cs_a-sc_0-to_a-pn_1-hp_-hk_-tf_n-oi_n-qb_n-ms_n-mt_n"
+  },
+  "urlBuilders": {
+    "listNormal": "https://e-hentai.org/?f_cats=1017&f_stags=on&f_sh=on&f_search=artist%3Atest+space&f_spt=50&f_sname=on&advsearch=1&f_sr=on&f_srdd=3&f_sp=on&f_spf=10",
+    "favList": "https://e-hentai.org/favorites.php?st=on&f_search=test+fav&sf=on&favcat=2&sn=on&page=1"
+  },
+  "sanitizeFilename": [
+    {
+      "input": "  [Author] Title: Vol.1 / Test*?\"<>|\\  ",
+      "sanitized": "[Author] Title Vol.1  Test",
+      "length": "26",
+      "utf16TailHex": ",0020,0054,0065,0073,0074"
+    },
+    {
+      "input": "　 padded title　",
+      "sanitized": "padded title",
+      "length": "12",
+      "utf16TailHex": ",0074,0069,0074,006c,0065"
+    },
+    {
+      "input": "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中extra",
+      "sanitized": "中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中中",
+      "length": "85",
+      "utf16TailHex": ",4e2d,4e2d,4e2d,4e2d,4e2d"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀tail",
+      "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d",
+      "length": "254",
+      "utf16TailHex": ",0061,0061,0061,0061,d83d"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀tail",
+      "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d",
+      "length": "253",
+      "utf16TailHex": ",0061,0061,0061,0061,d83d"
+    }
+  ],
+  "comparators": {
+    "pathNaturalSorted": [
+      "vol01/1.jpg",
+      "vol1/2.jpg",
+      "vol1/10.jpg",
+      "vol2/01.jpg",
+      "vol10/01.jpg"
+    ],
+    "naturalSorted": [
+      "001.jpg",
+      "01.jpg",
+      "1.jpg",
+      "2.jpg",
+      "10.jpg",
+      "a.jpg",
+      "a01b",
+      "a1b",
+      "a2b",
+      "B.jpg",
+      "chapter 2",
+      "chapter 10",
+      "page 03.png",
+      "page 3.png",
+      "page 20.png"
+    ]
+  },
+  "generateSLang": {
+    "language:chinese,language:translated": "ZH",
+    "language:english": "EN",
+    "language:korean,artist:foo": "KO",
+    "female:glasses": null
+  },
+  "spiderInfo": {
+    "v2SerializedText": "VERSION2\n00000005\n1366222\n0123456789\n1\n2\n20\n4\n0 token00000\n2 token22222\n",
+    "v2RoundTrip": {
+      "startPage": 5,
+      "gid": 1366222,
+      "token": "0123456789",
+      "previewPages": 2,
+      "previewPerPage": 20,
+      "pages": 4,
+      "pTokenMap": {
+        "0": "token00000",
+        "2": "token22222"
+      }
+    },
+    "cborHex": "a6636769641a0003c41a65746f6b656e6a666564636261393837366570616765730369737461727450616765016c707265766965775061676573016970546f6b656e4d6170a200637030610163703162",
+    "cborParsed": {
+      "startPage": 0,
+      "gid": 246810,
+      "token": "fedcba9876",
+      "previewPages": -1,
+      "previewPerPage": -1,
+      "pages": -1,
+      "pTokenMap": {}
+    }
+  }
+}

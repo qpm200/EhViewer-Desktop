@@ -1,0 +1,141 @@
+<Page
+    x:Class="EhViewer.Desktop.Views.GalleryPreviewsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EhViewer.Desktop.Controls"
+    xmlns:vm="using:EhViewer.Desktop.ViewModels"
+    xmlns:views="using:EhViewer.Desktop.Views"
+    Background="{StaticResource EhPageBackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <controls:MaterialToolbar
+            x:Name="Toolbar"
+            Title="全部预览"
+            ShowBackButton="True"
+            BackRequested="OnBackRequested">
+            <controls:MaterialToolbar.RightActions>
+                <Button
+                    Style="{StaticResource EhToolbarIconButtonStyle}"
+                    ToolTipService.ToolTip="跳转到页码"
+                    Click="OnGoToPageClick">
+                    <FontIcon Glyph="&#xE8AB;" FontSize="16" />
+                </Button>
+            </controls:MaterialToolbar.RightActions>
+        </controls:MaterialToolbar>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer Padding="16,14">
+                <ItemsRepeater
+                    x:Name="PreviewsRepeater"
+                    ElementPrepared="OnPreviewElementPrepared"
+                    ElementClearing="OnPreviewElementClearing">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            MinItemWidth="148"
+                            MinItemHeight="226"
+                            MinRowSpacing="10"
+                            MinColumnSpacing="10"
+                            ItemsStretch="Fill" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PreviewTileViewModel">
+                            <Border
+                                Style="{StaticResource EhMaterialCardStyle}"
+                                Padding="4"
+                                Background="{StaticResource EhCardSurfaceBrush}"
+                                Tag="{x:Bind}"
+                                Tapped="OnPreviewTileTapped">
+                                <Grid>
+                                    <Border CornerRadius="4" Background="{StaticResource EhSubtleSurfaceBrush}">
+                                        <Grid>
+                                            <FontIcon
+                                                Glyph="&#xEB9F;"
+                                                FontSize="24"
+                                                Foreground="{StaticResource EhTextSecondaryBrush}"
+                                                Opacity="0.45"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                                            <Image x:Name="TileImage" Stretch="Uniform" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Bottom"
+                                        Margin="0,0,0,6"
+                                        Background="#B4000000"
+                                        CornerRadius="10"
+                                        Padding="8,2">
+                                        <TextBlock
+                                            Text="{x:Bind views:GalleryPreviewsPage.FormatPageNumber(Position)}"
+                                            FontSize="11.5"
+                                            FontWeight="SemiBold"
+                                            Foreground="#FFFFFFFF" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+
+            <Border
+                x:Name="EmptyStateBorder"
+                Margin="24"
+                Padding="24"
+                MaxWidth="420"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource EhMaterialCardStyle}"
+                Visibility="Collapsed">
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE8B9;" FontSize="32" Foreground="{StaticResource EhPrimaryBrush}" HorizontalAlignment="Center" />
+                    <TextBlock
+                        Text="当前画廊暂无可显示预览页"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        HorizontalAlignment="Center"
+                        Foreground="{StaticResource EhTextPrimaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <ProgressRing
+                x:Name="LoadingRing"
+                IsActive="False"
+                Width="40"
+                Height="40"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- Android Preview bottom bar -->
+        <Border
+            Grid.Row="2"
+            Background="{StaticResource EhCardSurfaceBrush}"
+            BorderBrush="{StaticResource EhDividerBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,8">
+            <Grid MaxWidth="520" HorizontalAlignment="Center" ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="PrevPageBtn" Content="‹ 上一页" Click="OnPrevPageClick" />
+                <Button
+                    x:Name="PageIndicatorBtn"
+                    Grid.Column="1"
+                    Style="{StaticResource EhAccentFlatButtonStyle}"
+                    Click="OnGoToPageClick" />
+                <Button x:Name="NextPageBtn" Grid.Column="2" Content="下一页 ›" Click="OnNextPageClick" />
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

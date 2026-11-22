@@ -1,0 +1,1216 @@
+<Page
+    x:Class="EhViewer.Desktop.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EhViewer.Desktop.Controls"
+    xmlns:theming="using:EhViewer.Desktop.Services.Theming"
+    xmlns:views="using:EhViewer.Desktop.Views"
+    Background="{StaticResource EhPageBackgroundBrush}">
+
+    <Page.Resources>
+        <Style x:Key="EhPrefRowDividerStyle" TargetType="Rectangle">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Fill" Value="{StaticResource EhDividerBrush}" />
+        </Style>
+        <Style x:Key="EhPrefRowTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Foreground" Value="{StaticResource EhTextPrimaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="EhPrefRowCaptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Foreground" Value="{StaticResource EhTextSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="EhCompactToggleStyle" TargetType="ToggleSwitch">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="OnContent" Value="" />
+            <Setter Property="OffContent" Value="" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <controls:MaterialToolbar
+            Title="应用设置"
+            Subtitle="偏好分类 · 所有修改实时保存并立即生效">
+            <controls:MaterialToolbar.RightActions>
+                <Button
+                    Style="{StaticResource EhToolbarIconButtonStyle}"
+                    ToolTipService.ToolTip="重新载入设置"
+                    Click="OnReloadClick">
+                    <FontIcon Glyph="&#xE72C;" FontSize="16" />
+                </Button>
+            </controls:MaterialToolbar.RightActions>
+        </controls:MaterialToolbar>
+
+        <!-- Android Preference Headers (Left Rail) + Active Preference Fragment (Right) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="248" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border
+                Background="{StaticResource EhCardSurfaceBrush}"
+                BorderBrush="{StaticResource EhDividerBrush}"
+                BorderThickness="0,0,1,0"
+                Padding="10,14">
+                <StackPanel Spacing="6">
+                    <TextBlock
+                        Text="设置分组"
+                        FontSize="11.5"
+                        FontWeight="SemiBold"
+                        Margin="10,0,0,6"
+                        Foreground="{StaticResource EhTextSecondaryBrush}" />
+
+                    <Button x:Name="NavGroupEhBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupEh">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE774;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="EH 站点与同步" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="表里站 · 列表 · uconfig" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="NavGroupReadBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupRead">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE736;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="阅读体验" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="方向 · 缩放 · 解码与全屏" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="NavGroupDownloadBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupDownload">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE896;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="下载与缓存" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="目录 · 并发 · 内存与磁盘配额" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="NavGroupPrivacyBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupPrivacy">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE72E;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="隐私与安全" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="PIN · Windows Hello · 黑名单与过滤" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="NavGroupAdvancedBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupAdvanced">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE90F;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="外观、网络与高级" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="主题 · 代理 · Hosts · 数据维护" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="NavGroupAboutBtn" Style="{StaticResource EhNavRowButtonStyle}" Padding="12,10" Click="OnSelectGroupAbout">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE946;" FontSize="16" Foreground="{StaticResource EhPrimaryBrush}" />
+                            <StackPanel>
+                                <TextBlock Text="更新与关于" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                <TextBlock Text="检查更新 · 开源许可 · 配置目录" FontSize="11" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <Grid Padding="24,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Group 0: EH 站点与同步 -->
+                    <StackPanel x:Name="GroupEhPanel" Spacing="16">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="站点与列表显示" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="使用里站 (exhentai.org)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="需要已登录且具备有效 igneous 凭证" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseExHentai, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="显示日文标题" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ShowJpnTitle, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="在列表卡片显示画廊页数" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ShowGalleryPages, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启用鼠标悬停画廊预览浮窗" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ShowHoverPreview, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="列表每页条目数" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ListPageSizeNames}" SelectedIndex="{x:Bind ViewModel.ListPageSizeIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="缩略图分辨率覆盖" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ThumbResolutionNames}" SelectedIndex="{x:Bind ViewModel.ThumbResolutionIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="修复旧版缩略图主机 URL" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.FixThumbUrl, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="站点原图缩放规格 (uconfig)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ImageResolutionNames}" SelectedIndex="{x:Bind ViewModel.ImageResolutionIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="保存解析失败页面" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="解析 HTML 出错时写入日志目录以便排查" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.SaveParseErrorBody, Mode=TwoWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="E-Hentai 站点偏好同步 (uconfig)" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="排除语言过滤 (17×3)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.ExcludedLanguagesSummary, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="配置排除语言" Click="OnEditExcludedLanguagesClick" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="排除标签命名空间 (8 项)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.ExcludedNamespacesSummary, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="配置排除命名空间" Click="OnEditExcludedNamespacesClick" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="收藏夹排序方式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.FavoritesSortNames}" SelectedIndex="{x:Bind ViewModel.FavoritesSortIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="画廊评论排序方式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.CommentsSortNames}" SelectedIndex="{x:Bind ViewModel.CommentsSortIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="首页启用「热门 (WhatsHot)」区块" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.EnablePopularOnHome, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                    <Button Content="写入本地 uconfig Cookie" Click="OnApplyUConfigCookieClick" />
+                                    <Button Content="从 Cookie 回填" Click="OnPullUConfigCookieClick" />
+                                    <Button Style="{StaticResource EhTealPrimaryButtonStyle}" Content="在线同步 uconfig.php" Click="OnSyncUConfigOnlineClick" />
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.UConfigStatusMessage, Mode=OneWay}" Visibility="{x:Bind TextToVisibility(ViewModel.UConfigStatusMessage), Mode=OneWay}" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Group 1: 阅读体验 -->
+                    <StackPanel x:Name="GroupReadPanel" x:Load="False" Spacing="16" Visibility="Collapsed">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="阅读器默认设置" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="预加载页数 (1-10)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.PreloadCount, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="默认阅读方向" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ReaderLayoutNames}" SelectedIndex="{x:Bind ViewModel.DefaultReaderLayoutIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="默认缩放模式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ReaderScaleNames}" SelectedIndex="{x:Bind ViewModel.DefaultReaderScaleIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="默认最大解码边长" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.MaxDecodeEdgeNames}" SelectedIndex="{x:Bind ViewModel.MaxDecodeEdgeIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="默认开启双页并排阅读" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.DualPageMode, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="双页模式下封面单页显示" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.DualPageFirstAlone, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="默认使用纵向连续滚动" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ContinuousScroll, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="强制解码转码至 sRGB" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="避免广色域屏幕出现色彩过饱和" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ForceSrgb, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="阅读画面显示页码与时钟角标" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ShowPageNumber, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="阅读时保持屏幕唤醒" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.KeepScreenOn, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="开启滚轮边缘自动翻页" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.PageTurnByWheel, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="全屏阅读时自动隐藏控制栏" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.HideReaderChromeInFullscreen, Mode=TwoWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="生肉识字与防拒答翻译" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="OCR 识别语言（按需本地识字，快捷键 O）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.OcrLanguagePackStatus, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="260" ItemsSource="{x:Bind ViewModel.OcrLanguageNames}" SelectedIndex="{x:Bind ViewModel.ReaderOcrLanguageIndex, Mode=TwoWay}" />
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="打开系统语言设置安装 OCR" Click="OnOpenWindowsLanguageSettingsClick" />
+                                    <Button Content="刷新 OCR 检测" Click="OnRefreshOcrStatusClick" />
+                                </StackPanel>
+
+                                <StackPanel Spacing="8" Padding="12" CornerRadius="8" Background="#1000BFA5">
+                                    <TextBlock Text="两阶段漫画气泡识别引擎（RT-DETR 气泡定位 + Manga-OCR CPT-v2 高精度日漫识字）" FontWeight="SemiBold" />
+                                    <TextBlock Text="{x:Bind ViewModel.MangaOcrModelStatus, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" TextWrapping="Wrap" />
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="下载使用国内镜像 (hf-mirror.com)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseHfMirrorForModelDownload, Mode=TwoWay}" />
+                                    </Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="一键下载 / 升级漫画 OCR 模型 (~161 MB)" Click="OnDownloadMangaOcrModelsClick" />
+                                        <Button Content="取消下载" Click="OnCancelModelDownloadClick" Visibility="{x:Bind ViewModel.IsModelDownloading, Mode=OneWay}" />
+                                    </StackPanel>
+                                    <ProgressBar
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Value="{x:Bind ViewModel.LocalModelDownloadProgress, Mode=OneWay}"
+                                        Visibility="{x:Bind ViewModel.IsModelDownloading, Mode=OneWay}" />
+                                </StackPanel>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="翻译引擎路由" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="支持传统直译、DeepSeek AI（低推理单页连续上下文）、本地 Sakura-7B 与自定义接口" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="260" ItemsSource="{x:Bind ViewModel.TranslationProviderNames}" SelectedIndex="{x:Bind ViewModel.ReaderTranslationProviderIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="拒答/内容过滤自动回退" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="当主引擎触发内容审查拒答或连接失败时自动切换至本地模型/传统直译" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ReaderTranslationAutoFallback, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="内嵌译文视觉样式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="「填底嵌字」自动采样气泡底色与字色覆盖日文原文；「紧凑角标」保留原文叠加小标签" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="260" ItemsSource="{x:Bind ViewModel.InlineTranslationStyleNames}" SelectedIndex="{x:Bind ViewModel.ReaderInlineTranslationStyleIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="阅读器默认开启自动连译" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="在阅读器开启识字后，翻页或纵向滚动停顿时自动检测并内嵌翻译当前页全部气泡" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ReaderAutoTranslateOnPageTurn, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <StackPanel Spacing="6">
+                                    <TextBox
+                                        Header="术语表 / 角色译名锁定（每行一条：日文原词 = 指定中文译名）"
+                                        PlaceholderText="例：先輩=学长&#x0a;お兄ちゃん=>欧尼酱"
+                                        AcceptsReturn="True"
+                                        TextWrapping="Wrap"
+                                        MinHeight="72"
+                                        MaxHeight="132"
+                                        Text="{x:Bind ViewModel.TranslationGlossaryRules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="{x:Bind ViewModel.TranslationCacheCountText, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                        <Button Grid.Column="1" Content="清空本地译文缓存" Click="OnClearTranslationCacheClick" />
+                                    </Grid>
+                                </StackPanel>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="启用本地 Sakura-7B 离线大模型（可选）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="使用 Sakura-7B-Qwen2.5-v1.0-iq4xs.gguf 与 llama.cpp 本地推理引擎" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.EnableLocalSakuraModel, Mode=TwoWay}" />
+                                </Grid>
+
+                                <!-- Optional Local Sakura-7B + llama.cpp configuration -->
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.ShowLocalSakuraSection, Mode=OneWay}" Padding="12" CornerRadius="8" Background="#10888888">
+                                    <TextBlock Text="本地 Sakura-7B 与 llama.cpp 配置" FontWeight="SemiBold" />
+
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="模型下载使用国内镜像 (hf-mirror.com)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseHfMirrorForModelDownload, Mode=TwoWay}" />
+                                    </Grid>
+
+                                    <TextBox
+                                        Header="Sakura-7B 模型路径 (.gguf，留空使用应用 models 目录)"
+                                        PlaceholderText="sakura-7b-qwen2.5-v1.0-iq4xs.gguf"
+                                        Text="{x:Bind ViewModel.LocalSakuraModelPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="一键下载 Sakura-7B 模型 (支持断点续传)" Click="OnDownloadSakuraModelClick" />
+                                        <Button Content="浏览 .gguf 文件" Click="OnBrowseSakuraModelClick" />
+                                    </StackPanel>
+
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="llama.cpp 加速后端" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <ComboBox Grid.Column="1" Width="260" ItemsSource="{x:Bind ViewModel.LlamaBackendNames}" SelectedIndex="{x:Bind ViewModel.LocalLlamaBackendIndex, Mode=TwoWay}" />
+                                    </Grid>
+
+                                    <TextBox
+                                        Header="llama-server.exe 路径（留空使用自动下载的运行库）"
+                                        PlaceholderText="llama-server.exe"
+                                        Text="{x:Bind ViewModel.LocalLlamaServerPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="自动下载 llama.cpp" Click="OnDownloadLlamaCppClick" />
+                                        <Button Content="浏览 llama-server.exe" Click="OnBrowseLlamaServerClick" />
+                                    </StackPanel>
+
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <NumberBox Header="GPU 卸载层数 (-ngl)" Minimum="0" Maximum="128" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.LocalLlamaGpuLayers, Mode=TwoWay}" />
+                                        <NumberBox Grid.Column="1" Header="本地服务端口" Minimum="1025" Maximum="65534" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.LocalLlamaPort, Mode=TwoWay}" />
+                                    </Grid>
+
+                                    <ProgressBar
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Value="{x:Bind ViewModel.LocalModelDownloadProgress, Mode=OneWay}"
+                                        Visibility="{x:Bind ViewModel.IsModelDownloading, Mode=OneWay}" />
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="启动 / 停止本地推理服务" Click="OnToggleLlamaServerClick" />
+                                        <Button Content="取消下载" Click="OnCancelModelDownloadClick" Visibility="{x:Bind ViewModel.IsModelDownloading, Mode=OneWay}" />
+                                        <Button Content="试译测试" Click="OnTestTranslationClick" IsEnabled="{x:Bind ViewModel.CanTestTranslation, Mode=OneWay}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Optional Custom OpenAI-Compatible API section -->
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.ShowCustomOpenAiSection, Mode=OneWay}" Padding="12" CornerRadius="8" Background="#10888888">
+                                    <TextBlock Text="自定义 OpenAI 兼容接口" FontWeight="SemiBold" />
+                                    <TextBox Header="Base URL / 接口地址" PlaceholderText="https://api.openai.com/v1" Text="{x:Bind ViewModel.CustomTranslationEndpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox Header="模型名称" PlaceholderText="gpt-4o-mini" Text="{x:Bind ViewModel.CustomTranslationModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <PasswordBox x:Name="CustomApiKeyPasswordBox" PlaceholderText="输入 API Key（点击右侧或按 Enter 加密保存）" KeyDown="OnCustomApiKeyBoxKeyDown" />
+                                        <Button Grid.Column="1" Content="加密保存 Key" Click="OnSaveCustomApiKeyClick" />
+                                        <Button Grid.Column="2" Content="清除" Click="OnClearCustomApiKeyClick" />
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind ViewModel.CustomTranslationApiKeyStatus, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    <Button Content="试译测试" Click="OnTestTranslationClick" IsEnabled="{x:Bind ViewModel.CanTestTranslation, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <!-- DeepSeek AI Continuous Single-Page Translation section -->
+                                <StackPanel Spacing="10" Visibility="{x:Bind ViewModel.ShowDeepSeekSection, Mode=OneWay}" Padding="12" CornerRadius="8" Background="#10888888">
+                                    <TextBlock Text="DeepSeek AI 连续上下文翻译配置" FontWeight="SemiBold" />
+                                    <TextBox Header="DeepSeek Base URL / 接口地址" PlaceholderText="https://api.deepseek.com" Text="{x:Bind ViewModel.DeepSeekEndpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <StackPanel Spacing="6">
+                                        <TextBox Header="DeepSeek 模型名称" PlaceholderText="deepseek-chat" Text="{x:Bind ViewModel.DeepSeekModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="快捷预设：" Style="{StaticResource EhPrefRowCaptionStyle}" VerticalAlignment="Center" />
+                                            <Button Content="deepseek-chat (推荐 · 低延迟)" Padding="8,3" FontSize="11.5" Click="OnSelectDeepSeekChatPresetClick" />
+                                            <Button Content="deepseek-reasoner" Padding="8,3" FontSize="11.5" Click="OnSelectDeepSeekReasonerPresetClick" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Grid ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="推理强度 (Reasoning Effort)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                            <TextBlock Text="默认 Low，开启单页气泡上下文连续翻译（自动衔接前后分镜对白）" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1" Width="280" ItemsSource="{x:Bind ViewModel.DeepSeekReasoningEffortNames}" SelectedIndex="{x:Bind ViewModel.DeepSeekReasoningEffortIndex, Mode=TwoWay}" />
+                                    </Grid>
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <PasswordBox x:Name="DeepSeekApiKeyPasswordBox" PlaceholderText="输入 DeepSeek API Key（sk-...，按 Enter 或点击右侧加密保存）" KeyDown="OnDeepSeekApiKeyBoxKeyDown" />
+                                        <Button Grid.Column="1" Content="保存 DeepSeek 密钥" Click="OnSaveDeepSeekApiKeyClick" />
+                                        <Button Grid.Column="2" Content="清除密钥" Click="OnClearDeepSeekApiKeyClick" />
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind ViewModel.DeepSeekApiKeyStatus, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    <Button Content="试译测试（双气泡连续上下文）" Click="OnTestTranslationClick" IsEnabled="{x:Bind ViewModel.CanTestTranslation, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ProgressRing
+                                        Width="14"
+                                        Height="14"
+                                        VerticalAlignment="Center"
+                                        IsActive="{x:Bind ViewModel.IsTestingTranslation, Mode=OneWay}"
+                                        Visibility="{x:Bind ViewModel.IsTestingTranslation, Mode=OneWay}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Text="{x:Bind ViewModel.LocalTranslationStatusMessage, Mode=OneWay}"
+                                        Style="{StaticResource EhPrefRowCaptionStyle}"
+                                        TextWrapping="Wrap"
+                                        IsTextSelectionEnabled="True" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Group 2: 下载与缓存 -->
+                    <StackPanel x:Name="GroupDownloadPanel" x:Load="False" Spacing="16" Visibility="Collapsed">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="下载路径" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+                                <TextBox Header="自定义下载目录（留空则使用默认配置目录下的 Downloads）" PlaceholderText="{x:Bind ViewModel.EffectiveDownloadDirectory, Mode=OneWay}" Text="{x:Bind ViewModel.CustomDownloadDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="浏览文件夹" Click="OnChooseDownloadDirClick" />
+                                    <Button Content="恢复默认目录" Click="OnClearDownloadDirClick" />
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.EffectiveDownloadDirectory, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" IsTextSelectionEnabled="True" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="下载并发与缓存配额" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="下载并发数" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="1" Maximum="16" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.DownloadConcurrency, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="单图下载超时时间 (秒)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="5" Maximum="600" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.DownloadTimeoutSeconds, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="使用电池或省电模式时自动暂停下载" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.DownloadPauseOnBattery, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="缩略图内存缓存 (MB)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="0" Maximum="4096" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.ThumbnailMemoryBudgetMb, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="缩略图磁盘缓存 (MB)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="0" Maximum="65536" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.ThumbnailDiskBudgetMb, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="阅读器解码缓存上限 (MB)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="0" Maximum="16384" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.ReaderCacheBudgetMb, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="历史记录上限" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <NumberBox Grid.Column="1" Width="160" Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.MaxHistoryCount, Mode=TwoWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Group 3: 隐私与安全 -->
+                    <StackPanel x:Name="GroupPrivacyPanel" x:Load="False" Spacing="16" Visibility="Collapsed">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="应用锁定与内容屏蔽" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="优先调用 Windows Hello 验证" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="启动解锁时若系统支持则优先生物识别" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseWindowsHello, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="应用安全锁 PIN" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="{x:Bind ViewModel.SecurityPinStatus, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Style="{StaticResource EhTealPrimaryButtonStyle}" Content="设置 / 修改 PIN" Click="OnSetPinClick" />
+                                        <Button Content="清除 PIN"
+                                                Click="OnClearPinClick"
+                                                IsEnabled="{x:Bind ViewModel.CanClearAppLock, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="黑名单与全局标签过滤规则" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <Button Content="评论黑名单" Click="OnManageBlackListClick" />
+                                        <Button Content="屏蔽规则 (EhFilter)" Click="OnManageFiltersClick" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="防社死老板键与自动锁定" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="启用全局老板键" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="无论焦点是否在窗口内，按下快捷键瞬间隐藏主窗体与所有阅读子窗" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.EnableBossKey, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="老板键快捷键" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="再次按下热键或双击系统托盘图标可恢复窗口" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <ComboBox Width="210" SelectedIndex="{x:Bind ViewModel.BossKeyGestureIndex, Mode=TwoWay}">
+                                            <ComboBoxItem Content="Ctrl + Alt + H（默认推荐）" />
+                                            <ComboBoxItem Content="Alt + ~（左手单手极速）" />
+                                            <ComboBoxItem Content="Ctrl + Shift + H" />
+                                            <ComboBoxItem Content="F9（单键瞬间隐身）" />
+                                            <ComboBoxItem Content="Ctrl + B" />
+                                        </ComboBox>
+                                        <Button Content="立即隐身" Click="OnTestBossKeyClick" />
+                                    </StackPanel>
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="恢复窗口时强制验证安全锁" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="已配置 PIN 或 Windows Hello 时，恢复前先全屏遮罩并要求验证，杜绝内容闪露" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.RequireUnlockOnBossRestore, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="无操作自动隐私锁定" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="离开座位超时未操作后自动拉起遮罩并隐藏独立阅读窗" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="170" SelectedIndex="{x:Bind ViewModel.AutoLockMinutesIndex, Mode=TwoWay}">
+                                        <ComboBoxItem Content="关闭" />
+                                        <ComboBoxItem Content="1 分钟" />
+                                        <ComboBoxItem Content="3 分钟" />
+                                        <ComboBoxItem Content="5 分钟" />
+                                        <ComboBoxItem Content="10 分钟" />
+                                    </ComboBox>
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="隐身期间伪装托盘名称且静默通知" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="托盘提示伪装为常规桌面辅助服务，且不弹出下载/配额气泡通知" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.StealthTrayTooltip, Mode=TwoWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Group 4: 外观、网络与高级 -->
+                    <StackPanel x:Name="GroupAdvancedPanel" x:Load="False" Spacing="16" Visibility="Collapsed">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="外观主题与系统集成" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <StackPanel Spacing="8">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="界面设计主题" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="选择整体界面设计风格；当前已将经典 Material 样式封装为独立主题，未来新增的不同 UI 设计也会自动出现在此处" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+
+                                    <ListView
+                                        x:Name="UiThemeSelector"
+                                        AutomationProperties.AutomationId="UiThemeSelector"
+                                        SelectionMode="Single"
+                                        ItemsSource="{x:Bind ViewModel.AvailableUiThemes}"
+                                        SelectedIndex="{x:Bind ViewModel.UiThemeIndex, Mode=TwoWay}">
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                <Setter Property="Padding" Value="0" />
+                                                <Setter Property="Margin" Value="0,2" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ListViewItem">
+                                                            <Border
+                                                                x:Name="ItemCardBorder"
+                                                                Background="{StaticResource EhSubtleSurfaceBrush}"
+                                                                BorderBrush="{StaticResource EhCardBorderBrush}"
+                                                                BorderThickness="1.5"
+                                                                CornerRadius="8">
+                                                                <VisualStateManager.VisualStateGroups>
+                                                                    <VisualStateGroup x:Name="CommonStates">
+                                                                        <VisualState x:Name="Normal" />
+                                                                        <VisualState x:Name="PointerOver">
+                                                                            <Storyboard>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="Background">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhHoverSurfaceBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                            </Storyboard>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="Selected">
+                                                                            <Storyboard>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="BorderBrush">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhPrimaryBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="Background">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckIndicator" Storyboard.TargetProperty="Opacity">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                            </Storyboard>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="PointerOverSelected">
+                                                                            <Storyboard>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="BorderBrush">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhPrimaryBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="Background">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckIndicator" Storyboard.TargetProperty="Opacity">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                            </Storyboard>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="SelectedUnfocused">
+                                                                            <Storyboard>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="BorderBrush">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhPrimaryBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemCardBorder" Storyboard.TargetProperty="Background">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckIndicator" Storyboard.TargetProperty="Opacity">
+                                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                                </ObjectAnimationUsingKeyFrames>
+                                                                            </Storyboard>
+                                                                        </VisualState>
+                                                                    </VisualStateGroup>
+                                                                </VisualStateManager.VisualStateGroups>
+                                                                <Grid Padding="12,10">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <ContentPresenter
+                                                                        Grid.Column="0"
+                                                                        Content="{TemplateBinding Content}"
+                                                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                                    <FontIcon
+                                                                        x:Name="CheckIndicator"
+                                                                        Grid.Column="1"
+                                                                        Glyph="&#xE73E;"
+                                                                        FontSize="14"
+                                                                        Foreground="{StaticResource EhPrimaryBrush}"
+                                                                        Opacity="0"
+                                                                        Margin="10,0,2,0"
+                                                                        VerticalAlignment="Center" />
+                                                                </Grid>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="theming:UiThemeMetadata">
+                                                <Grid ColumnSpacing="14">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Mini UI Design Thumbnail Preview -->
+                                                    <Border
+                                                        Width="76"
+                                                        Height="50"
+                                                        CornerRadius="6"
+                                                        BorderBrush="{StaticResource EhCardBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Background="{x:Bind views:UiHelpers.FromUintArgb(LightSurfaceArgb)}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="22" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Grid Grid.Column="0" Background="{x:Bind views:UiHelpers.FromUintArgb(LightCardArgb)}">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="18" />
+                                                                    <RowDefinition Height="*" />
+                                                                </Grid.RowDefinitions>
+                                                                <Border Grid.Row="0" Background="{x:Bind views:UiHelpers.FromUintArgb(HeaderPreviewArgb)}" />
+                                                                <Border
+                                                                    Grid.Row="1"
+                                                                    Margin="3,4,3,3"
+                                                                    CornerRadius="2"
+                                                                    Background="{x:Bind views:UiHelpers.FromUintArgb(LightAccentArgb)}"
+                                                                    Height="6"
+                                                                    VerticalAlignment="Bottom" />
+                                                            </Grid>
+                                                            <Grid Grid.Column="1" Padding="4">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="10" />
+                                                                    <RowDefinition Height="*" />
+                                                                </Grid.RowDefinitions>
+                                                                <Border
+                                                                    Grid.Row="0"
+                                                                    CornerRadius="3"
+                                                                    Background="{x:Bind views:UiHelpers.FromUintArgb(LightCardArgb)}" />
+                                                                <Border
+                                                                    Grid.Row="1"
+                                                                    Margin="0,3,0,0"
+                                                                    CornerRadius="3"
+                                                                    Background="{x:Bind views:UiHelpers.FromUintArgb(DarkSurfaceArgb)}"
+                                                                    Padding="3">
+                                                                    <Border
+                                                                        Width="12"
+                                                                        Height="5"
+                                                                        CornerRadius="2"
+                                                                        HorizontalAlignment="Right"
+                                                                        VerticalAlignment="Bottom"
+                                                                        Background="{x:Bind views:UiHelpers.FromUintArgb(DarkAccentArgb)}" />
+                                                                </Border>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Border>
+
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock
+                                                                Text="{x:Bind DisplayName}"
+                                                                FontSize="14"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="{StaticResource EhTextPrimaryBrush}" />
+                                                            <Border
+                                                                Background="{StaticResource EhTagBackgroundBrush}"
+                                                                BorderBrush="{StaticResource EhTagBorderBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="4"
+                                                                Padding="6,1"
+                                                                VerticalAlignment="Center">
+                                                                <TextBlock
+                                                                    Text="{x:Bind BadgeText}"
+                                                                    FontSize="10.5"
+                                                                    FontWeight="SemiBold"
+                                                                    Foreground="{StaticResource EhPrimaryBrush}" />
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            Text="{x:Bind Description}"
+                                                            Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+                                </StackPanel>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="主题色彩模式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ThemeNames}" SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启用 Mica 材质背景（Windows 11）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseMica, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="收缩左侧导航栏（仅保留图标与恢复按钮）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="隐藏导航文字与配额卡片以扩展浏览区域，也可随时点击导航栏左上角按钮切换" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch
+                                        x:Name="CollapseDrawerToggle"
+                                        AutomationProperties.AutomationId="CollapseDrawerToggle"
+                                        Grid.Column="1"
+                                        Style="{StaticResource EhCompactToggleStyle}"
+                                        IsOn="{x:Bind ViewModel.CollapseNavigationDrawer, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="导航栏收缩时鼠标悬停自动展开" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                        <TextBlock Text="开启后鼠标移入左侧图标栏自动悬浮展开，移出后自动收缩" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch
+                                        x:Name="AutoExpandDrawerToggle"
+                                        AutomationProperties.AutomationId="AutoExpandDrawerToggle"
+                                        Grid.Column="1"
+                                        Style="{StaticResource EhCompactToggleStyle}"
+                                        IsOn="{x:Bind ViewModel.AutoExpandSidebarOnHover, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="记住窗口尺寸与位置" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.RememberWindowPlacement, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="关闭主窗口时最小化到系统托盘" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启用下载完成与 509 配额告警通知" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.ShowNotifications, Mode=TwoWay}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="网络代理、Hosts 与 DoH" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="代理模式" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ComboBox Grid.Column="1" Width="220" ItemsSource="{x:Bind ViewModel.ProxyTypeNames}" SelectedIndex="{x:Bind ViewModel.ProxyTypeIndex, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="代理地址与端口" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <TextBox Width="150" PlaceholderText="127.0.0.1" Text="{x:Bind ViewModel.ProxyIp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <NumberBox Width="120" Minimum="0" Maximum="65535" Value="{x:Bind ViewModel.ProxyPort, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="内置 Hosts（表站）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.BuiltInHosts, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="内置 Hosts（里站）" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.BuiltInExHosts, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启用域名前置 (Domain Fronting)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.DomainFronting, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启用 DNS over HTTPS (DoH)" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.UseDnsOverHttps, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="DoH 端点 URL" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <TextBox Grid.Column="1" Width="280" Text="{x:Bind ViewModel.DohEndpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="自定义 Hosts 映射表" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <Button Grid.Column="1" Content="管理自定义 Hosts" Click="OnManageHostsClick" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="数据备份与维护" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+                                <TextBlock Text="导出/导入数据库（含书签、历史、过滤规则）、清理图片缓存与冗余下载记录。" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                                <controls:TagWrapPanel HorizontalSpacing="8" VerticalSpacing="8">
+                                    <Button Content="导出数据" Click="OnExportDataClick" />
+                                    <Button Content="导入数据" Click="OnImportDataClick" />
+                                    <Button Content="清理图片缓存" Click="OnClearImageCacheClick" />
+                                    <Button Content="清理冗余下载项" Click="OnCleanRedundancyClick" />
+                                    <Button Content="清除下载路径缓存" Click="OnClearDownloadPathCacheClick" />
+                                </controls:TagWrapPanel>
+                                <TextBlock Text="{x:Bind ViewModel.MaintenanceMessage, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Group 5: 更新与关于 -->
+                    <StackPanel x:Name="GroupAboutPanel" x:Load="False" Spacing="16" Visibility="Collapsed">
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="应用更新与开源许可" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="启动时静默检查更新" Style="{StaticResource EhPrefRowTitleStyle}" />
+                                    <ToggleSwitch Grid.Column="1" Style="{StaticResource EhCompactToggleStyle}" IsOn="{x:Bind ViewModel.CheckUpdateOnLaunch, Mode=TwoWay}" />
+                                </Grid>
+                                <Rectangle Style="{StaticResource EhPrefRowDividerStyle}" />
+
+                                <TextBox Header="更新源 JSON URL" Text="{x:Bind ViewModel.UpdateFeedUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Style="{StaticResource EhTealPrimaryButtonStyle}" Content="立即检查更新" Click="OnCheckUpdateClick" />
+                                    <Button Content="开源许可与关于" Click="OnAboutClick" />
+                                </StackPanel>
+                                <TextBlock Text="{x:Bind ViewModel.UpdateStatusMessage, Mode=OneWay}" Visibility="{x:Bind TextToVisibility(ViewModel.UpdateStatusMessage), Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EhMaterialCardStyle}" Padding="20,16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="本地配置目录" Style="{StaticResource EhSettingsCategoryTitleStyle}" />
+                                <TextBlock Text="{x:Bind ViewModel.ConfigDirectory, Mode=OneWay}" Style="{StaticResource EhPrefRowCaptionStyle}" IsTextSelectionEnabled="True" />
+                                <Button HorizontalAlignment="Left" Content="打开配置目录" Click="OnOpenConfigDirectoryClick" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Sticky Material Save Footer -->
+        <Border
+            Grid.Row="2"
+            Background="{StaticResource EhCardSurfaceBrush}"
+            BorderBrush="{StaticResource EhDividerBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Spacing="4" VerticalAlignment="Center">
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        Visibility="{x:Bind views:UiHelpers.CollapsedIfNotEmpty(ViewModel.StatusMessage), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{StaticResource EhPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="已开启实时保存，所有偏好修改即刻写入本地配置并生效"
+                            FontSize="12"
+                            Foreground="{StaticResource EhTextSecondaryBrush}"
+                            VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        Visibility="{x:Bind views:UiHelpers.VisibleIfNotEmpty(ViewModel.StatusMessage), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{StaticResource EhPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" FontSize="12.5" Foreground="{StaticResource EhPrimaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <InfoBar
+                        Visibility="{x:Bind views:UiHelpers.VisibleIfNotEmpty(ViewModel.ErrorMessage), Mode=OneWay}"
+                        IsOpen="{x:Bind HasText(ViewModel.ErrorMessage), Mode=OneWay}"
+                        Severity="Error"
+                        Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Content="重新载入" Click="OnReloadClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

@@ -1,0 +1,42 @@
+# Build output
+bin/
+obj/
+.artifacts/
+artifacts/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# Test / coverage
+TestResults/
+*.trx
+*.coverage
+coverage*.xml
+
+# NuGet
+*.nupkg
+packages/
+
+# Local tooling caches
+.gradle/
+.vs4w/
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Secrets / local-only configuration that must never be committed.
+# Note: settings.json lives under %LOCALAPPDATA% at runtime, not in the repo;
+# these patterns guard against accidental copies.
+settings.local.json
+*.local.json
+*.pfx
+*.snk
+
+# NOTE: upstream\Ehviewer_CN_SXJ is a read-only reference checkout with its own .git.
+# Never commit it into this repository; never modify it.

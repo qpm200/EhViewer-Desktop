@@ -1,0 +1,14 @@
+{
+  "forumsParser": {
+    "ok": false,
+    "errorType": "ParseException",
+    "errorMessage": "Parse forums error",
+    "value": null
+  },
+  "profileParser": {
+    "ok": false,
+    "errorType": "ParseException",
+    "errorMessage": "Parse forums error",
+    "value": null
+  }
+}

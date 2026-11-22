@@ -1,0 +1,84 @@
+{
+  "parseSiteE": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "paramOr": "",
+      "items": [
+        {
+          "res": "780",
+          "name": "780x"
+        },
+        {
+          "res": "980",
+          "name": "980x"
+        },
+        {
+          "res": "1280",
+          "name": "1280x"
+        },
+        {
+          "res": "1600",
+          "name": "1600x"
+        },
+        {
+          "res": "2400",
+          "name": "2400x"
+        },
+        {
+          "res": "org",
+          "name": "Original"
+        }
+      ]
+    }
+  },
+  "parseSiteEx": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "paramOr": "",
+      "items": [
+        {
+          "res": "780",
+          "name": "780x"
+        },
+        {
+          "res": "980",
+          "name": "980x"
+        },
+        {
+          "res": "1280",
+          "name": "1280x"
+        },
+        {
+          "res": "1600",
+          "name": "1600x"
+        },
+        {
+          "res": "2400",
+          "name": "2400x"
+        },
+        {
+          "res": "org",
+          "name": "Original"
+        }
+      ]
+    }
+  },
+  "parseArchiver": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "funds": "H@H Downloader 780x 588.4 KiB Free 980x 2.21 MiB Free 1280x 2.17 MiB Free 1600x 5.89 MiB Free 2400x 11.00 MiB Free Original 18.46 MiB Free",
+      "originalCost": null,
+      "originalSize": null,
+      "originalUrl": null,
+      "resampleCost": null,
+      "resampleSize": null,
+      "resampleUrl": null
+    }
+  }
+}

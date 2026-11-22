@@ -1,0 +1,660 @@
+<Window
+    x:Class="EhViewer.Desktop.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="using:EhViewer.Desktop.Views"
+    xmlns:vm="using:EhViewer.Desktop.ViewModels"
+    xmlns:theming="using:EhViewer.Desktop.Services.Theming"
+    Title="EhViewer">
+
+    <Grid
+        x:Name="RootGrid"
+        AllowDrop="True"
+        Background="{StaticResource EhPageBackgroundBrush}"
+        DragOver="OnRootDragOver"
+        Drop="OnRootDrop"
+        KeyboardAcceleratorPlacementMode="Hidden"
+        PointerPressed="OnRootPointerPressed">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="OnShortcutSearchInvoked" />
+            <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnShortcutSearchInvoked" />
+            <KeyboardAccelerator Key="V" Modifiers="Control,Shift" Invoked="OnShortcutClipboardInvoked" />
+            <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="OnShortcutBackInvoked" />
+            <KeyboardAccelerator Key="Escape" Invoked="OnShortcutEscapeInvoked" />
+        </Grid.KeyboardAccelerators>
+
+        <Grid x:Name="ShellContentGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="DrawerSpacerColumn" Width="256" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+        <!-- Permanent or Compact-Rail Left Navigation Drawer -->
+        <Border
+            x:Name="LeftDrawerBorder"
+            AutomationProperties.AutomationId="LeftDrawerBorder"
+            Grid.Column="0"
+            Width="256"
+            Background="{StaticResource EhDrawerSurfaceBrush}"
+            PointerEntered="OnLeftDrawerPointerEntered"
+            PointerExited="OnLeftDrawerPointerExited">
+            <Border.Shadow>
+                <ThemeShadow />
+            </Border.Shadow>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- nav_header_main (156px expanded / 104px compact with collapse & restore toggle) -->
+                <Border
+                    x:Name="NavHeaderBorder"
+                    Grid.Row="0"
+                    Height="156"
+                    Background="{StaticResource EhDrawerHeaderBrush}"
+                    Padding="16,14,14,14"
+                    Tapped="OnNavHeaderTapped">
+                    <Grid>
+                        <!-- Collapse / Restore button (top-left expanded, centered compact) + Site switcher pill (top-right expanded) -->
+                        <Grid VerticalAlignment="Top">
+                            <Button
+                                x:Name="DrawerToggleBtn"
+                                AutomationProperties.AutomationId="DrawerToggleBtn"
+                                HorizontalAlignment="Left"
+                                Width="32"
+                                Height="32"
+                                Padding="0"
+                                CornerRadius="8"
+                                Background="#24FFFFFF"
+                                BorderThickness="0"
+                                Foreground="#FFFFFFFF"
+                                ToolTipService.ToolTip="收缩左侧导航栏（仅保留图标）"
+                                Click="OnDrawerToggleClick">
+                                <FontIcon
+                                    x:Name="DrawerToggleIcon"
+                                    Glyph="&#xE8A0;"
+                                    FontSize="14"
+                                    Foreground="#FFFFFFFF" />
+                            </Button>
+                            <Button
+                                x:Name="NavSiteSwitchBtn"
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource EhNavSitePillButtonStyle}"
+                                Content="E-Hentai"
+                                ToolTipService.ToolTip="切换 E-Hentai / ExHentai 站点"
+                                Click="OnToggleSiteClick" />
+                        </Grid>
+
+                        <StackPanel x:Name="NavHeaderUserStack" VerticalAlignment="Bottom" Spacing="8">
+                            <!-- 56dp Circular Avatar (shrinks to 36dp in compact rail) -->
+                            <Border
+                                x:Name="NavAvatarContainer"
+                                Width="56"
+                                Height="56"
+                                CornerRadius="28"
+                                Background="#33FFFFFF"
+                                BorderBrush="#66FFFFFF"
+                                BorderThickness="1.5"
+                                HorizontalAlignment="Left">
+                                <Grid>
+                                    <FontIcon
+                                        x:Name="NavAvatarFallbackIcon"
+                                        Glyph="&#xE77B;"
+                                        FontSize="24"
+                                        Foreground="#FFFFFFFF"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                    <Ellipse x:Name="NavAvatarEllipse" Width="56" Height="56">
+                                        <Ellipse.Fill>
+                                            <ImageBrush x:Name="NavAvatarBrush" Stretch="UniformToFill" />
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel x:Name="NavUserInfoPanel" Spacing="1">
+                                <TextBlock
+                                    x:Name="NavUserNameText"
+                                    Text="未登录 · 点击登录"
+                                    FontSize="15"
+                                    FontWeight="SemiBold"
+                                    Foreground="#FFFFFFFF"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    x:Name="NavUserSubText"
+                                    Text="点击登录或管理 Cookie / 账号配额"
+                                    FontSize="11"
+                                    Foreground="#CCFFFFFF"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 8 Exact Android Main Menu Items -->
+                <Border Grid.Row="1" BorderBrush="{StaticResource EhDividerBrush}" BorderThickness="0,0,1,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ListView
+                        x:Name="NavigationItems"
+                        SelectionMode="Single"
+                        Padding="8,6,8,6"
+                        SelectionChanged="OnNavigationSelectionChanged">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="Padding" Value="14,6" />
+                                <Setter Property="MinHeight" Value="38" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <Grid Padding="0,1.5">
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualState x:Name="Normal" />
+                                                        <VisualState x:Name="PointerOver">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhHoverSurfaceBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhPressedSurfaceBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Selected">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ActiveIndicator" Storyboard.TargetProperty="Opacity">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="PointerOverSelected">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ActiveIndicator" Storyboard.TargetProperty="Opacity">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="PressedSelected">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhPressedSurfaceBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ActiveIndicator" Storyboard.TargetProperty="Opacity">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="SelectedUnfocused">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ActiveIndicator" Storyboard.TargetProperty="Opacity">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="PointerOverSelectedUnfocused">
+                                                            <Storyboard>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ItemBorder" Storyboard.TargetProperty="Background">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource EhNavSelectedBackgroundBrush}" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ActiveIndicator" Storyboard.TargetProperty="Opacity">
+                                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="1" />
+                                                                </ObjectAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
+                                                <Border
+                                                    x:Name="ItemBorder"
+                                                    Background="Transparent"
+                                                    theming:ThemeMetricsBinder.Role="NavItem"
+                                                    CornerRadius="8"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    MinHeight="{TemplateBinding MinHeight}">
+                                                    <Grid>
+                                                        <Border
+                                                            x:Name="ActiveIndicator"
+                                                            Width="3.5"
+                                                            Height="18"
+                                                            CornerRadius="2"
+                                                            Background="{StaticResource EhPrimaryBrush}"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Center"
+                                                            Margin="-10,0,0,0"
+                                                            Opacity="0" />
+                                                        <ContentPresenter
+                                                            x:Name="ContentPresenter"
+                                                            Content="{TemplateBinding Content}"
+                                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NavigationEntry">
+                                <StackPanel
+                                    AutomationProperties.Name="{x:Bind Label}"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="{x:Bind CompactToolTip, Mode=OneWay}">
+                                    <FontIcon
+                                        Glyph="{x:Bind Glyph}"
+                                        FontSize="16"
+                                        Foreground="{StaticResource EhPrimaryBrush}"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Text="{x:Bind Label}"
+                                        Margin="14,0,0,0"
+                                        FontSize="14"
+                                        FontWeight="Medium"
+                                        Foreground="{StaticResource EhTextPrimaryBrush}"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind views:UiHelpers.CollapsedIf(IsCompact), Mode=OneWay}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        </ListView>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Bottom Drawer Footer: Clipboard open + LimitsCountView + Quick Theme Switch -->
+                <Border
+                    x:Name="DrawerFooterBorder"
+                    Grid.Row="2"
+                    BorderBrush="{StaticResource EhDividerBrush}"
+                    BorderThickness="0,1,1,0"
+                    Padding="12,10,12,10">
+                    <StackPanel Spacing="8">
+                        <Button
+                            x:Name="ClipboardBtn"
+                            Style="{StaticResource EhNavRowButtonStyle}"
+                            Padding="8,6"
+                            ToolTipService.ToolTip="识别剪贴板画廊链接 (Ctrl+Shift+V)"
+                            Click="OnOpenFromClipboardClick">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE77F;" FontSize="14" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                                <TextBlock
+                                    x:Name="ClipboardBtnText"
+                                    Text="打开剪贴板链接"
+                                    Margin="10,0,0,0"
+                                    FontSize="12"
+                                    Foreground="{StaticResource EhTextPrimaryBrush}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- LimitsCountView -->
+                        <Border
+                            x:Name="LimitsCardBorder"
+                            Background="{StaticResource EhSubtleSurfaceBrush}"
+                            BorderBrush="{StaticResource EhCardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="11,9">
+                            <StackPanel Spacing="6">
+                                <Grid>
+                                    <TextBlock
+                                        x:Name="LimitsTitleText"
+                                        Text="图片查看配额"
+                                        FontSize="12"
+                                        FontWeight="SemiBold"
+                                        Foreground="{StaticResource EhTextPrimaryBrush}"
+                                        VerticalAlignment="Center" />
+                                    <Button
+                                        HorizontalAlignment="Right"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="4"
+                                        CornerRadius="4"
+                                        ToolTipService.ToolTip="刷新图片配额"
+                                        Click="OnRefreshLimitsClick">
+                                        <FontIcon Glyph="&#xE72C;" FontSize="11.5" Foreground="{StaticResource EhPrimaryBrush}" />
+                                    </Button>
+                                </Grid>
+                                <Grid Height="6" Margin="0,1,0,1">
+                                    <Border
+                                        Height="6"
+                                        CornerRadius="3"
+                                        Background="{StaticResource EhDividerBrush}" />
+                                    <ProgressBar
+                                        x:Name="LimitsProgressBar"
+                                        MinHeight="6"
+                                        Height="6"
+                                        CornerRadius="3"
+                                        Background="Transparent"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Value="0"
+                                        Foreground="{StaticResource EhPrimaryBrush}" />
+                                </Grid>
+                                <TextBlock
+                                    x:Name="LimitsValueText"
+                                    Text="登录后点击刷新查看配额"
+                                    FontSize="11"
+                                    LineHeight="15"
+                                    TextWrapping="Wrap"
+                                    Foreground="{StaticResource EhTextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Draggable 3-Stop Theme Pill Slider (浅色 / 深色 / 纯黑) + Compact Rail Icon Fallback -->
+                        <Border
+                            x:Name="ThemeSliderContainer"
+                            AutomationProperties.AutomationId="ThemeSliderContainer"
+                            AutomationProperties.Name="颜色主题滑块"
+                            IsTabStop="True"
+                            Height="36"
+                            CornerRadius="18"
+                            Background="{StaticResource EhSubtleSurfaceBrush}"
+                            BorderBrush="{StaticResource EhCardBorderBrush}"
+                            BorderThickness="1"
+                            Padding="3"
+                            KeyDown="OnThemeSliderKeyDown"
+                            ToolTipService.ToolTip="拖动或点击滑块切换 浅色 / 深色 / 纯黑 主题（支持方向键）">
+                            <Grid
+                                x:Name="ThemeSliderTrackGrid"
+                                Background="Transparent"
+                                SizeChanged="OnThemeSliderTrackSizeChanged"
+                                PointerPressed="OnThemeSliderPointerPressed"
+                                PointerMoved="OnThemeSliderPointerMoved"
+                                PointerReleased="OnThemeSliderPointerReleased"
+                                PointerCanceled="OnThemeSliderPointerCanceled"
+                                PointerCaptureLost="OnThemeSliderPointerCaptureLost">
+                                <Border
+                                    x:Name="ThemeSliderThumb"
+                                    AutomationProperties.AutomationId="ThemeSliderThumb"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Stretch"
+                                    CornerRadius="15"
+                                    Background="{StaticResource EhPrimaryBrush}">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="ThemeThumbTransform" />
+                                    </Border.RenderTransform>
+                                </Border>
+                                <Grid IsHitTestVisible="False">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        x:Name="ThemeLightBtn"
+                                        AutomationProperties.AutomationId="ThemeLightBtn"
+                                        AutomationProperties.Name="浅色"
+                                        Grid.Column="0"
+                                        CornerRadius="15">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <FontIcon x:Name="ThemeLightIcon" Glyph="&#xE706;" FontSize="12" Foreground="#FFFFFFFF" />
+                                            <TextBlock x:Name="ThemeLightText" Text="浅色" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border
+                                        x:Name="ThemeDarkBtn"
+                                        AutomationProperties.AutomationId="ThemeDarkBtn"
+                                        AutomationProperties.Name="深色"
+                                        Grid.Column="1"
+                                        CornerRadius="15">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <FontIcon x:Name="ThemeDarkIcon" Glyph="&#xE708;" FontSize="12" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                                            <TextBlock x:Name="ThemeDarkText" Text="深色" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border
+                                        x:Name="ThemeBlackBtn"
+                                        AutomationProperties.AutomationId="ThemeBlackBtn"
+                                        AutomationProperties.Name="纯黑"
+                                        Grid.Column="2"
+                                        CornerRadius="15">
+                                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <FontIcon x:Name="ThemeBlackIcon" Glyph="&#xE771;" FontSize="12" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                                            <TextBlock x:Name="ThemeBlackText" Text="纯黑" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource EhTextSecondaryBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Button
+                            x:Name="ThemeCompactBtn"
+                            AutomationProperties.AutomationId="ThemeCompactBtn"
+                            Style="{StaticResource EhNavRowButtonStyle}"
+                            HorizontalContentAlignment="Center"
+                            Padding="8,6"
+                            Visibility="Collapsed"
+                            Click="OnThemeCompactClick">
+                            <FontIcon x:Name="ThemeCompactIcon" Glyph="&#xE790;" FontSize="15" Foreground="{StaticResource EhPrimaryBrush}" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Main Scene Stage + Contextual Right Drawer -->
+        <Grid x:Name="MainStageGrid" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <InfoBar
+                x:Name="GlobalBannerInfoBar"
+                Grid.Row="0"
+                IsOpen="False"
+                IsClosable="True"
+                Visibility="Collapsed"
+                Severity="Informational"
+                Closed="OnGlobalBannerClosed"
+                Margin="12,8,12,8" />
+
+            <!-- Active Scene Host -->
+            <ContentPresenter
+                x:Name="SceneContentHost"
+                Grid.Row="1"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch" />
+
+            <!-- Android Contextual Right Drawer Overlay (mRightDrawer) -->
+            <Grid x:Name="RightDrawerOverlay" Grid.RowSpan="2" Visibility="Collapsed">
+                <Border x:Name="RightDrawerScrim" Background="{StaticResource EhScrimBrush}" PointerPressed="OnRightDrawerScrimPressed" />
+                <Border
+                    x:Name="RightDrawerPanel"
+                    HorizontalAlignment="Right"
+                    Width="316"
+                    Background="{StaticResource EhDrawerSurfaceBrush}"
+                    BorderBrush="{StaticResource EhDividerBrush}"
+                    BorderThickness="1,0,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border
+                            Grid.Row="0"
+                            Height="52"
+                            Background="{StaticResource EhToolbarSurfaceBrush}"
+                            Padding="14,0,8,0">
+                            <Grid>
+                                <TextBlock
+                                    x:Name="RightDrawerTitleText"
+                                    Text="辅助栏"
+                                    FontSize="15"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource EhToolbarForegroundBrush}"
+                                    VerticalAlignment="Center" />
+                                <Button
+                                    HorizontalAlignment="Right"
+                                    Style="{StaticResource EhToolbarIconButtonStyle}"
+                                    Click="OnCloseRightDrawerClick">
+                                    <FontIcon Glyph="&#xE711;" FontSize="13" />
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <ContentPresenter
+                            x:Name="RightDrawerContentHost"
+                            Grid.Row="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- In-Window Hover Cover Preview Overlay (strictly bounded inside MainStageGrid) -->
+            <Canvas
+                x:Name="HoverPreviewCanvas"
+                Grid.RowSpan="3"
+                IsHitTestVisible="False">
+                <Border
+                    x:Name="HoverPreviewCard"
+                    Visibility="Collapsed"
+                    Width="280"
+                    Background="{StaticResource EhFloatingSurfaceBrush}"
+                    BorderBrush="{StaticResource EhPrimaryBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="10"
+                    Translation="0,0,24">
+                    <Border.Shadow>
+                        <ThemeShadow />
+                    </Border.Shadow>
+                    <StackPanel Spacing="8">
+                        <Border
+                            Height="320"
+                            CornerRadius="6"
+                            Background="{StaticResource EhSubtleSurfaceBrush}">
+                            <Grid>
+                                <ProgressRing
+                                    x:Name="HoverPreviewLoadingRing"
+                                    Width="26"
+                                    Height="26"
+                                    IsActive="False"
+                                    Visibility="Collapsed"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                                <Image
+                                    x:Name="HoverPreviewImage"
+                                    MaxHeight="320"
+                                    MaxWidth="260"
+                                    Stretch="Uniform"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                                <Border
+                                    x:Name="HoverPreviewCategoryBadge"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Margin="6"
+                                    CornerRadius="4"
+                                    Padding="6,2">
+                                    <TextBlock
+                                        x:Name="HoverPreviewCategoryText"
+                                        FontSize="10.5"
+                                        FontWeight="Bold"
+                                        Foreground="#FFFFFFFF" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <TextBlock
+                            x:Name="HoverPreviewTitle"
+                            FontSize="12.5"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource EhTextPrimaryBrush}"
+                            TextWrapping="Wrap"
+                            MaxLines="2"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="HoverPreviewMeta"
+                            FontSize="11"
+                            Foreground="{StaticResource EhTextSecondaryBrush}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Border>
+            </Canvas>
+        </Grid>
+        </Grid>
+
+        <!-- Circular Reveal Overlay for Bottom-Left Theme Transitions -->
+        <Grid
+            x:Name="ThemeTransitionHost"
+            x:Load="False"
+            Canvas.ZIndex="100"
+            Visibility="Collapsed"
+            IsHitTestVisible="False">
+            <Image x:Name="ThemeOldSnapshotImage" Stretch="Fill" />
+            <Image x:Name="ThemeNewSnapshotImage" Stretch="Fill" />
+        </Grid>
+
+        <!-- Opaque Privacy & Boss Key Lock Curtain (always shields pixels before showing PIN prompt) -->
+        <Grid
+            x:Name="PrivacyLockOverlay"
+            x:Load="False"
+            Canvas.ZIndex="150"
+            Visibility="Collapsed"
+            Background="{StaticResource EhPageBackgroundBrush}">
+            <Border
+                Style="{StaticResource EhMaterialCardStyle}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Width="360"
+                Padding="28,24">
+                <StackPanel Spacing="14" HorizontalAlignment="Stretch">
+                    <Border
+                        Width="52"
+                        Height="52"
+                        CornerRadius="26"
+                        Background="{StaticResource EhTagBackgroundBrush}"
+                        HorizontalAlignment="Center">
+                        <FontIcon Glyph="&#xE72E;" FontSize="22" Foreground="{StaticResource EhPrimaryBrush}" />
+                    </Border>
+                    <TextBlock
+                        Text="隐私安全保护中"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Foreground="{StaticResource EhTextPrimaryBrush}"
+                        HorizontalAlignment="Center" />
+                    <TextBlock
+                        x:Name="PrivacyLockSubtitleText"
+                        Text="已遮挡画廊与阅读画面，完成身份验证后恢复显示。"
+                        FontSize="12.5"
+                        Foreground="{StaticResource EhTextSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        TextAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,6,0,0">
+                        <Button
+                            Style="{StaticResource EhTealPrimaryButtonStyle}"
+                            Content="验证并解锁"
+                            Click="OnPrivacyUnlockClick" />
+                        <Button
+                            Content="隐藏回托盘"
+                            Click="OnPrivacyHideBackClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

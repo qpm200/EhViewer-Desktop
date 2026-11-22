@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "errorType": null,
+  "errorMessage": null,
+  "value": {
+    "used": 538,
+    "total": 50000,
+    "resetCost": 1076,
+    "resetCostText": "1076 Gp",
+    "fromGalleryVisits": "306261 Gp",
+    "fromTorrentCompletions": "27176 Gp",
+    "fromArchiveDownloads": "75999 Gp",
+    "fromHentaiAtHome": "0 Gp",
+    "currentModerationPower": "13",
+    "imageLimits": "538/50000"
+  }
+}

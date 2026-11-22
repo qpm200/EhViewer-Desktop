@@ -1,0 +1,75 @@
+{
+  "parseTagGroups": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": [
+      {
+        "groupName": "male",
+        "tags": [
+          "sole male"
+        ]
+      },
+      {
+        "groupName": "female",
+        "tags": [
+          "big breasts",
+          "paizuri",
+          "sole female"
+        ]
+      },
+      {
+        "groupName": "other",
+        "tags": [
+          "variant set"
+        ]
+      }
+    ]
+  },
+  "parseCommentsDoc": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "hasMore": false,
+      "comments": [
+        {
+          "id": 0,
+          "score": 0,
+          "editable": false,
+          "voteUpAble": false,
+          "voteUpEd": false,
+          "voteDownAble": false,
+          "voteDownEd": false,
+          "voteState": "",
+          "time": 1685190780000,
+          "user": "Pokom",
+          "comment": "https://www.fanbox.cc/@maze456<br>\nhttps://skeb.jp/@Maze_wry<br>\nhttps://twitter.com/Maze_wry<br>\nhttps://www.pixiv.net/users/22831245/artworks",
+          "lastEdited": 0
+        }
+      ]
+    }
+  },
+  "parsePreviewSet": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": {
+      "type": "NormalPreviewSet",
+      "size": 0,
+      "items": []
+    }
+  },
+  "parsePreviewPages": {
+    "ok": true,
+    "errorType": null,
+    "errorMessage": null,
+    "value": 1
+  },
+  "parsePages": {
+    "ok": false,
+    "errorType": "ParseException",
+    "errorMessage": "Parse pages error",
+    "value": null
+  }
+}
