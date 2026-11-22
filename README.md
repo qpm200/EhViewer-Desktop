@@ -1,4 +1,4 @@
-# EhViewer Desktop
+﻿# EhViewer Desktop
 
 基于 **.NET 10** 与 **WinUI 3（Windows App SDK）** 构建的 E-Hentai / ExHentai 桌面端应用。
 
@@ -42,5 +42,5 @@ dotnet test tests/EhViewer.Core.Tests/EhViewer.Core.Tests.csproj -c Release --no
 dotnet test tests/EhViewer.Desktop.Tests/EhViewer.Desktop.Tests.csproj -c Release -p:Platform=x64 --no-build
 
 # 打包独立运行发行版 (win-x64)
-dotnet publish src/EhViewer.Desktop/EhViewer.Desktop.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:DebugType=None -p:DebugSymbols=false -o publish/win-x64
+dotnet publish src/EhViewer.Desktop/EhViewer.Desktop.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:SatelliteResourceLanguages="zh-Hans%3Ben" -p:DebugType=None -p:DebugSymbols=false -o publish/win-x64
 ```
