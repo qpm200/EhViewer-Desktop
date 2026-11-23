@@ -28,15 +28,20 @@ jobs:
 
       - name: Resolve and push tag
         id: resolve_tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_INPUT: ${{ inputs.tag }}
+          RUN_NUMBER: ${{ github.run_number }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$TAG_INPUT"
             if [ -z "$TAG" ]; then
               LATEST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "")
               if [[ "$LATEST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.[0-9]+$ ]]; then
-                TAG="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${{ github.run_number }}"
+                TAG="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${RUN_NUMBER}"
               else
-                TAG="v1.0.${{ github.run_number }}"
+                TAG="v1.0.${RUN_NUMBER}"
               fi
               while git rev-parse "$TAG" >/dev/null 2>&1; do
                 TAG="${TAG}-$(date +%s)"
@@ -47,7 +52,7 @@ jobs:
             git tag "$TAG"
             git push origin "$TAG"
           else
-            TAG="${{ github.ref_name }}"
+            TAG="$REF_NAME"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
@@ -73,9 +78,11 @@ jobs:
 
       - name: Package artifacts
         shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          Compress-Archive -Path publish/win-x64/* -DestinationPath "EhViewer-Desktop-${{ needs.prepare.outputs.tag }}-win-x64.zip" -Force
-          Compress-Archive -Path publish/win-arm64/* -DestinationPath "EhViewer-Desktop-${{ needs.prepare.outputs.tag }}-win-arm64.zip" -Force
+          Compress-Archive -Path publish/win-x64/* -DestinationPath "EhViewer-Desktop-$($env:RELEASE_TAG)-win-x64.zip" -Force
+          Compress-Archive -Path publish/win-arm64/* -DestinationPath "EhViewer-Desktop-$($env:RELEASE_TAG)-win-arm64.zip" -Force
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
