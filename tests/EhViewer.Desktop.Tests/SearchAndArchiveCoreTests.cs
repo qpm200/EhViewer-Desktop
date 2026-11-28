@@ -190,149 +190,96 @@ public sealed class CategoryTableTests
 /// Guards the translation of <c>widget/SearchDatabase.java</c>, including the LIKE escaping the
 /// Android original did not have to worry about because it escaped by hand.
 /// </summary>
-public sealed class SearchHistoryDatabaseTests
+public sealed class SearchHistoryDatabaseTests : DesktopTestBase
 {
-    private static string CreateTempDatabasePath()
-    {
-        string directory = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, "search.db");
-    }
+    private string CreateTempDatabasePath()
+        => Path.Combine(CreateTempDirectory("ehv-search"), "search.db");
 
     [Fact]
     public void AddQuery_ThenGetSuggestions_ReturnsNewestFirst()
     {
         string path = CreateTempDatabasePath();
-        try
-        {
-            using var database = new SearchHistoryDatabase(path);
-            database.AddQuery("alpha");
-            database.AddQuery("alphabet");
+        using var database = new SearchHistoryDatabase(path);
+        database.AddQuery("alpha");
+        database.AddQuery("alphabet");
 
-            List<string> suggestions = database.GetSuggestions("alph", 10);
+        List<string> suggestions = database.GetSuggestions("alph", 10);
 
-            Assert.Equal(["alphabet", "alpha"], suggestions);
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        Assert.Equal(["alphabet", "alpha"], suggestions);
     }
 
     [Fact]
     public void GetSuggestions_SkipsExactPrefixEcho()
     {
         string path = CreateTempDatabasePath();
-        try
-        {
-            using var database = new SearchHistoryDatabase(path);
-            database.AddQuery("alpha");
+        using var database = new SearchHistoryDatabase(path);
+        database.AddQuery("alpha");
 
-            Assert.Empty(database.GetSuggestions("alpha", 10));
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        Assert.Empty(database.GetSuggestions("alpha", 10));
     }
 
     [Fact]
     public void GetSuggestions_LimitIsHonoured()
     {
         string path = CreateTempDatabasePath();
-        try
+        using var database = new SearchHistoryDatabase(path);
+        for (int i = 0; i < 5; i++)
         {
-            using var database = new SearchHistoryDatabase(path);
-            for (int i = 0; i < 5; i++)
-            {
-                database.AddQuery($"tag{i}");
-            }
+            database.AddQuery($"tag{i}");
+        }
 
-            Assert.Equal(2, database.GetSuggestions("tag", 2).Count);
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        Assert.Equal(2, database.GetSuggestions("tag", 2).Count);
     }
 
     [Fact]
     public void AddQuery_DuplicateRefreshesInsteadOfGrowing()
     {
         string path = CreateTempDatabasePath();
-        try
-        {
-            using var database = new SearchHistoryDatabase(path);
-            database.AddQuery("dup");
-            database.AddQuery("dup");
+        using var database = new SearchHistoryDatabase(path);
+        database.AddQuery("dup");
+        database.AddQuery("dup");
 
-            Assert.Single(database.GetSuggestions("du", 10));
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        Assert.Single(database.GetSuggestions("du", 10));
     }
 
     [Fact]
     public void TruncateHistory_KeepsNewestEntries()
     {
         string path = CreateTempDatabasePath();
-        try
+        using var database = new SearchHistoryDatabase(path);
+        for (int i = 0; i < 10; i++)
         {
-            using var database = new SearchHistoryDatabase(path);
-            for (int i = 0; i < 10; i++)
-            {
-                database.AddQuery($"q{i}");
-                Thread.Sleep(2);
-            }
-
-            database.TruncateHistory(3);
-
-            Assert.Equal(3, database.GetSuggestions(string.Empty, 100).Count);
+            database.AddQuery($"q{i}");
+            Thread.Sleep(2);
         }
-        finally
-        {
-            Cleanup(path);
-        }
+
+        database.TruncateHistory(3);
+
+        Assert.Equal(3, database.GetSuggestions(string.Empty, 100).Count);
     }
 
     [Fact]
     public void ClearQuery_EmptiesTheTable()
     {
         string path = CreateTempDatabasePath();
-        try
-        {
-            using var database = new SearchHistoryDatabase(path);
-            database.AddQuery("x");
+        using var database = new SearchHistoryDatabase(path);
+        database.AddQuery("x");
 
-            database.ClearQuery();
+        database.ClearQuery();
 
-            Assert.Empty(database.GetSuggestions(string.Empty, 100));
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        Assert.Empty(database.GetSuggestions(string.Empty, 100));
     }
 
     [Fact]
     public void GetSuggestions_QuoteInPrefixDoesNotBreakTheStatement()
     {
         string path = CreateTempDatabasePath();
-        try
-        {
-            using var database = new SearchHistoryDatabase(path);
-            database.AddQuery("a'b");
+        using var database = new SearchHistoryDatabase(path);
+        database.AddQuery("a'b");
 
-            // A quote must be data, not SQL; the escaped LIKE keeps the literal prefix intact.
-            Assert.Single(database.GetSuggestions("a'", 10));
-            Assert.Empty(database.GetSuggestions("a''", 10));
-        }
-        finally
-        {
-            Cleanup(path);
-        }
+        // A quote must be data, not SQL; the escaped LIKE keeps the literal prefix intact.
+        Assert.Single(database.GetSuggestions("a'", 10));
+        Assert.Empty(database.GetSuggestions("a''", 10));
     }
 
     [Fact]
@@ -342,128 +289,84 @@ public sealed class SearchHistoryDatabaseTests
         Assert.Equal("a\\_b", SearchHistoryDatabase.EscapeLike("a_b"));
         Assert.Equal("a\\\\b", SearchHistoryDatabase.EscapeLike("a\\b"));
     }
-
-    private static void Cleanup(string databasePath)
-    {
-        string? directory = Path.GetDirectoryName(databasePath);
-        if (directory is not null && Directory.Exists(directory))
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
 }
 
 /// <summary>
 /// Guards the translation of <c>gallery/A7ZipArchive.java</c> onto SharpCompress, including the
 /// path-traversal resistance the upstream JNI version needed before extracting.
 /// </summary>
-public sealed class ArchiveImporterTests
+public sealed class ArchiveImporterTests : DesktopTestBase
 {
     [Fact]
     public void Import_Zip_RenumbersImagesInNaturalOrder()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            string archivePath = Path.Combine(root, "gallery.zip");
-            CreateZip(archivePath, ("page10.png", [1]), ("page2.png", [2]), ("page1.png", [3]));
+        string root = CreateTempDirectory("ehv-archive");
+        string archivePath = Path.Combine(root, "gallery.zip");
+        CreateZip(archivePath, ("page10.png", [1]), ("page2.png", [2]), ("page1.png", [3]));
 
-            string target = Path.Combine(root, "out");
-            int count = ArchiveImporter.Import(archivePath, target);
+        string target = Path.Combine(root, "out");
+        int count = ArchiveImporter.Import(archivePath, target);
 
-            Assert.Equal(3, count);
-            Assert.Equal(["00000000.png", "00000001.png", "00000002.png"],
-                Directory.GetFiles(target).Select(Path.GetFileName).OrderBy(static n => n, StringComparer.Ordinal));
+        Assert.Equal(3, count);
+        Assert.Equal(["00000000.png", "00000001.png", "00000002.png"],
+            Directory.GetFiles(target).Select(Path.GetFileName).OrderBy(static n => n, StringComparer.Ordinal));
 
-            // Natural order: page1, page2, page10.
-            Assert.Equal([3], File.ReadAllBytes(Path.Combine(target, "00000000.png")));
-            Assert.Equal([2], File.ReadAllBytes(Path.Combine(target, "00000001.png")));
-            Assert.Equal([1], File.ReadAllBytes(Path.Combine(target, "00000002.png")));
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        // Natural order: page1, page2, page10.
+        Assert.Equal([3], File.ReadAllBytes(Path.Combine(target, "00000000.png")));
+        Assert.Equal([2], File.ReadAllBytes(Path.Combine(target, "00000001.png")));
+        Assert.Equal([1], File.ReadAllBytes(Path.Combine(target, "00000002.png")));
     }
 
     [Fact]
     public void Import_EntryWithTraversalKey_StaysInsideTargetDirectory()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            string archivePath = Path.Combine(root, "evil.zip");
-            CreateZip(archivePath, ("../../escape.png", [9]), ("ok.png", [1]));
+        string root = CreateTempDirectory("ehv-archive");
+        string archivePath = Path.Combine(root, "evil.zip");
+        CreateZip(archivePath, ("../../escape.png", [9]), ("ok.png", [1]));
 
-            string target = Path.Combine(root, "out", "gallery");
-            int count = ArchiveImporter.Import(archivePath, target);
+        string target = Path.Combine(root, "out", "gallery");
+        int count = ArchiveImporter.Import(archivePath, target);
 
-            Assert.Equal(2, count);
+        Assert.Equal(2, count);
 
-            // Destinations are generated names, so nothing can be written outside the target.
-            Assert.All(Directory.GetFiles(target), file => Assert.Equal(target, Path.GetDirectoryName(file)));
-            Assert.False(File.Exists(Path.Combine(root, "escape.png")));
-            Assert.False(File.Exists(Path.Combine(root, "out", "escape.png")));
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        // Destinations are generated names, so nothing can be written outside the target.
+        Assert.All(Directory.GetFiles(target), file => Assert.Equal(target, Path.GetDirectoryName(file)));
+        Assert.False(File.Exists(Path.Combine(root, "escape.png")));
+        Assert.False(File.Exists(Path.Combine(root, "out", "escape.png")));
     }
 
     [Fact]
     public void Import_SkipsNonImageEntries()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            string archivePath = Path.Combine(root, "mixed.zip");
-            CreateZip(archivePath, ("readme.txt", [1]), ("001.jpg", [2]), ("info.xml", [3]));
+        string root = CreateTempDirectory("ehv-archive");
+        string archivePath = Path.Combine(root, "mixed.zip");
+        CreateZip(archivePath, ("readme.txt", [1]), ("001.jpg", [2]), ("info.xml", [3]));
 
-            string target = Path.Combine(root, "out");
-            int count = ArchiveImporter.Import(archivePath, target);
+        string target = Path.Combine(root, "out");
+        int count = ArchiveImporter.Import(archivePath, target);
 
-            Assert.Equal(1, count);
-            Assert.Single(Directory.GetFiles(target));
-            Assert.EndsWith("00000000.jpg", Directory.GetFiles(target)[0], StringComparison.Ordinal);
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        Assert.Equal(1, count);
+        Assert.Single(Directory.GetFiles(target));
+        Assert.EndsWith("00000000.jpg", Directory.GetFiles(target)[0], StringComparison.Ordinal);
     }
 
     [Fact]
     public void Import_ArchiveWithoutImages_Throws()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            string archivePath = Path.Combine(root, "empty.zip");
-            CreateZip(archivePath, ("readme.txt", [1]));
+        string root = CreateTempDirectory("ehv-archive");
+        string archivePath = Path.Combine(root, "empty.zip");
+        CreateZip(archivePath, ("readme.txt", [1]));
 
-            Assert.Throws<InvalidOperationException>(
-                () => ArchiveImporter.Import(archivePath, Path.Combine(root, "out")));
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        Assert.Throws<InvalidOperationException>(
+            () => ArchiveImporter.Import(archivePath, Path.Combine(root, "out")));
     }
 
     [Fact]
     public void Import_MissingArchive_ThrowsFileNotFound()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            Assert.Throws<FileNotFoundException>(
-                () => ArchiveImporter.Import(Path.Combine(root, "nope.zip"), Path.Combine(root, "out")));
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        string root = CreateTempDirectory("ehv-archive");
+        Assert.Throws<FileNotFoundException>(
+            () => ArchiveImporter.Import(Path.Combine(root, "nope.zip"), Path.Combine(root, "out")));
     }
 
     [Theory]
@@ -500,21 +403,6 @@ public sealed class ArchiveImporterTests
             ZipArchiveEntry entry = archive.CreateEntry(name);
             using Stream entryStream = entry.Open();
             entryStream.Write(content, 0, content.Length);
-        }
-    }
-
-    private static string CreateTempRoot()
-    {
-        string root = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        return root;
-    }
-
-    private static void Cleanup(string root)
-    {
-        if (Directory.Exists(root))
-        {
-            Directory.Delete(root, recursive: true);
         }
     }
 }

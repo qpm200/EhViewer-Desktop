@@ -7,35 +7,12 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Wave4SettingsPerfTests : IDisposable
+public sealed class SettingsPerformanceTests : DesktopTestBase
 {
-    private readonly string _root;
-
-    public Wave4SettingsPerfTests()
-    {
-        _root = Path.Combine(Path.GetTempPath(), "EhViewerWave4SettingsTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
-    }
-
     [Fact]
     public void Summary_IsLazyCachedAndRefreshesAfterAutoSaveChanges()
     {
-        string appDir = Path.Combine(_root, "lazy-summary");
-        using var services = AppServices.Create(AppPaths.CreateAt(appDir));
+        using var services = AppServices.Create(CreateTempAppPaths("settings-lazy-summary", ensureCreated: false));
         var vm = new SettingsViewModel(services, deferHeavyIo: true);
 
         int summaryChangedCount = 0;
@@ -96,8 +73,7 @@ public sealed class Wave4SettingsPerfTests : IDisposable
     [Fact]
     public async Task DeferHeavyIo_ProvidesMemoryStatusImmediatelyAndSupportsAsyncRefreshAndCancellation()
     {
-        string appDir = Path.Combine(_root, "defer-heavy-io");
-        AppPaths paths = AppPaths.CreateAt(appDir);
+        AppPaths paths = CreateTempAppPaths("settings-defer-heavy-io", ensureCreated: false);
         using (AppServices seedServices = AppServices.Create(paths))
         {
             seedServices.UpdateSettings(s => s.ReaderTranslationProvider = TranslationProviderIds.DeepSeek);
@@ -145,8 +121,7 @@ public sealed class Wave4SettingsPerfTests : IDisposable
     [Fact]
     public void DeepSeekAndProviderChanges_UpdateStatusSynchronouslyWithoutThrowing()
     {
-        string appDir = Path.Combine(_root, "provider-status-sync");
-        using var services = AppServices.Create(AppPaths.CreateAt(appDir));
+        using var services = AppServices.Create(CreateTempAppPaths("settings-provider-sync", ensureCreated: false));
         var vm = new SettingsViewModel(services, deferHeavyIo: true);
 
         Assert.Contains("传统直译已就绪", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
@@ -178,8 +153,7 @@ public sealed class Wave4SettingsPerfTests : IDisposable
     [Fact]
     public void SettingsPageXaml_DefersGroups1To5WithXLoadFalseAndLoadsGroup0Eagerly()
     {
-        string repoRoot = LocateRepositoryRoot();
-        string xamlPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "Views", "SettingsPage.xaml");
+        string xamlPath = ResolveDesktopSourceFile("Views", "SettingsPage.xaml");
         Assert.True(File.Exists(xamlPath), $"SettingsPage.xaml not found at {xamlPath}");
 
         XDocument doc = XDocument.Load(xamlPath);
@@ -213,21 +187,5 @@ public sealed class Wave4SettingsPerfTests : IDisposable
             .FirstOrDefault(e => string.Equals(e.Attribute(xNs + "Name")?.Value, name, StringComparison.Ordinal));
         Assert.NotNull(element);
         return element!;
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        string? dir = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(dir))
-        {
-            if (File.Exists(Path.Combine(dir, "EhViewer.Desktop.slnx")))
-            {
-                return dir;
-            }
-
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        throw new InvalidOperationException("Unable to locate EhViewer.Desktop.slnx from AppContext.BaseDirectory.");
     }
 }

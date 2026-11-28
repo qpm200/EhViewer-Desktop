@@ -7,7 +7,7 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Batch2NavigationAndFavoritesTests
+public sealed class NavigationAndFavoritesTests
 {
     [Fact]
     public void ShellViewModel_IncludesWhatsHotNavigationEntry()

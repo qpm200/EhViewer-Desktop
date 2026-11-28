@@ -14,28 +14,13 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Batch3DetailAndArchiverTests : IDisposable
+public sealed class GalleryDetailAndArchiverTests : DesktopTestBase
 {
     private readonly string _root;
 
-    public Batch3DetailAndArchiverTests()
+    public GalleryDetailAndArchiverTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), $"eh_batch3_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
+        _root = CreateTempDirectory("eh-detail-archiver");
     }
 
     [Fact]

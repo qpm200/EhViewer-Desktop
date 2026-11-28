@@ -17,7 +17,7 @@ namespace EhViewer.Core.Tests.StorageTests;
 /// No production file is modified by this fixture.
 /// </para>
 /// </summary>
-public sealed class StorageTests
+public sealed class StorageTests : TempDirectoryTestBase
 {
     /// <summary>Index created by <c>CreateAllTables</c> / the v4 migration and used by <c>InBlackList</c>.</summary>
     private const string BlackListIndexName = "IDX_Black_List_BADGAYNAME";
@@ -1592,36 +1592,21 @@ public sealed class StorageTests
     // Helpers
     // ------------------------------------------------------------------------------------
 
-    private static string NewDatabasePath(out string directory)
+    protected override void DisposeCore()
     {
-        directory = Path.Combine(Path.GetTempPath(), "ehviewer-tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
+        SqliteConnection.ClearAllPools();
+    }
+
+    private string NewDatabasePath(out string directory)
+    {
+        directory = CreateTempDirectory("ehviewer-storage");
         return Path.Combine(directory, "eh.db");
     }
 
     private static void CleanupDirectory(string directory)
     {
+        _ = directory;
         SqliteConnection.ClearAllPools();
-        for (int attempt = 0; attempt < 5; attempt++)
-        {
-            try
-            {
-                if (Directory.Exists(directory))
-                {
-                    Directory.Delete(directory, recursive: true);
-                }
-
-                return;
-            }
-            catch (IOException)
-            {
-                Thread.Sleep(25);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Thread.Sleep(25);
-            }
-        }
     }
 
     private static SqliteConnection OpenRaw(string path, SqliteOpenMode mode = SqliteOpenMode.ReadWriteCreate)

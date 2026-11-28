@@ -20,7 +20,7 @@ namespace EhViewer.Core.Tests.ClientTests;
 /// detection, error mapping, and fixture-backed parsing).
 /// Every HTTP exchange is served by <see cref="RecordingMessageHandler"/>; no real network access.
 /// </summary>
-public sealed class EhTagDatabaseAndEngineTests
+public sealed class EhTagDatabaseAndEngineTests : TempDirectoryTestBase
 {
     private const string KokomadeMarker = "https://exhentai.org/img/kokomade.jpg";
     private const string UnparseableHtml = "<html><body><p>not a gallery page</p></body></html>";
@@ -202,7 +202,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -238,7 +237,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -284,7 +282,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -316,7 +313,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -351,7 +347,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -381,7 +376,6 @@ public sealed class EhTagDatabaseAndEngineTests
         }
         finally
         {
-            TryDeleteDirectory(directory);
         }
     }
 
@@ -390,7 +384,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task SignInAsync_PostsFormToApiSignIn_WithRefererAndOrigin_AndDecodesName()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             "<html><body><p>You are now logged in as: TestUser<scr</p></body></html>"));
 
         string name = await scope.Engine.SignInAsync("TestUser", "secret");
@@ -413,7 +407,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task SignInAsync_DecodesUtf8DisplayName()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             "<html><body><p>You are now logged in as: 測試用戶<br /></p></body></html>"));
 
         string name = await scope.Engine.SignInAsync("測試用戶", "secret");
@@ -424,7 +418,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task SignInAsync_SurfacesForumErrorMessageAsEhException()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             "<html><body><h4>The error returned was:</h4><p>Username or password incorrect</p></body></html>"));
 
         var ex = await Assert.ThrowsAsync<EhException>(() => scope.Engine.SignInAsync("u", "p"));
@@ -466,7 +460,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_RaisesEventPaneReceived_WithEventPaneInnerHtml()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("EhNews.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("EhNews.html")));
 
         var payloads = new List<string>();
         scope.Engine.EventPaneReceived += payloads.Add;
@@ -490,7 +484,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_ParsesQuota_AndStaysSilentWithoutEventPane()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("HomePageNew.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("HomePageNew.html")));
 
         int raised = 0;
         scope.Engine.EventPaneReceived += _ => raised++;
@@ -508,7 +502,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetEhNewsAsync_ReturnsEventPaneFromNewsPage()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("EhNews.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("EhNews.html")));
 
         EhNewsDetail news = await scope.Engine.GetEhNewsAsync();
 
@@ -522,7 +516,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_ThrowsEhExceptionSadPanda_OnSadPandaHeaders()
     {
-        using var scope = EngineScope.Create(static _ =>
+        using var scope = CreateEngineScope(static _ =>
         {
             var content = new ByteArrayContent(new byte[9615]);
             content.Headers.ContentType = new MediaTypeHeaderValue("image/gif");
@@ -541,7 +535,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_ThrowsQuotaEhException_OnKokomadeMarker()
     {
-        using var scope = EngineScope.Create(_ => HtmlResponse($"<html><body><img src=\"{KokomadeMarker}\" /></body></html>"));
+        using var scope = CreateEngineScope(_ => HtmlResponse($"<html><body><img src=\"{KokomadeMarker}\" /></body></html>"));
 
         var ex = await Assert.ThrowsAsync<EhException>(() => scope.Engine.GetHomeDetailAsync());
 
@@ -554,7 +548,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_ThrowsStatusCodeException_WithIdentified404()
     {
-        using var scope = EngineScope.Create(static _ =>
+        using var scope = CreateEngineScope(static _ =>
             HtmlResponse("<html><body></body></html>", HttpStatusCode.NotFound));
 
         var ex = await Assert.ThrowsAsync<StatusCodeException>(() => scope.Engine.GetHomeDetailAsync());
@@ -582,7 +576,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryPageAsync_WrapsParseException_WithBody_WhenPageIsUnparseable()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(UnparseableHtml));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(UnparseableHtml));
 
         // The engine remaps a ParseException carrying HTML into a domain EhException whose message
         // is "Failed to parse server response", keeping the parser failure as InnerException.
@@ -600,7 +594,7 @@ public sealed class EhTagDatabaseAndEngineTests
     public async Task GetGalleryPageAsync_SurfacesRawBody_ForNonHtmlBody()
     {
         const string plainTextBody = "You are not allowed to view this page";
-        using var scope = EngineScope.Create(_ => HtmlResponse(plainTextBody));
+        using var scope = CreateEngineScope(_ => HtmlResponse(plainTextBody));
 
         // A body with no '<' is not HTML, so the engine surfaces it verbatim as the message.
         var ex = await Assert.ThrowsAsync<EhException>(
@@ -614,7 +608,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryPageAsync_ReportsEmptyHtmlResponse_ForBlankBody()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(string.Empty));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(string.Empty));
 
         var ex = await Assert.ThrowsAsync<EhException>(
             () => scope.Engine.GetGalleryPageAsync(GalleryPageUrl, 1363978L, "ghz0e5m98a4"));
@@ -627,7 +621,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetHomeDetailAsync_ThrowsCancelledException_ForPreCancelledToken()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("HomePageNew.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("HomePageNew.html")));
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
@@ -645,7 +639,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryListAsync_ParsesGoldenFixture_WithoutApiEnrichment()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("GalleryListParserNew3.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("GalleryListParserNew3.html")));
 
         GalleryListParser.Result result = await scope.Engine.GetGalleryListAsync(
             "https://exhentai.org/?f_search=female%3Amother",
@@ -673,7 +667,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryPageAsync_ParsesGoldenFixture()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("GalleryPageParserTest.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("GalleryPageParserTest.html")));
 
         GalleryPageParser.Result result = await scope.Engine.GetGalleryPageAsync(
             "https://e-hentai.org/s/ghz0e5m98a4/1363978-10",
@@ -693,7 +687,7 @@ public sealed class EhTagDatabaseAndEngineTests
     }    [Fact]
     public async Task GetTopListAsync_ParsesGoldenFixture()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("GalleryTopList.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("GalleryTopList.html")));
 
         EhTopListDetail detail = await scope.Engine.GetTopListAsync(EhUrl.GetTopListUrl());
 
@@ -712,7 +706,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryTokenAsync_PostsGtokenPayload_AndParsesToken()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             """{"tokenlist":[{"token":"a1b2c3d4e5"}]}"""));
 
         string token = await scope.Engine.GetGalleryTokenAsync(1234L, "0123456789", page: 2);
@@ -731,7 +725,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetGalleryTokenAsync_SurfacesApiErrorAsEhException()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             """{"tokenlist":[{"error":"Invalid token"}]}"""));
 
         var ex = await Assert.ThrowsAsync<EhException>(
@@ -743,7 +737,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task GetWatchedListAsync_ReturnsNullWithoutAnyRequest_WhenNotSignedIn()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(FixtureHtml("MyTagList.html")));
+        using var scope = CreateEngineScope(static _ => HtmlResponse(FixtureHtml("MyTagList.html")));
 
         UserTagList? result = await scope.Engine.GetWatchedListAsync(EhUrl.GetWatchedUrl());
 
@@ -755,7 +749,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task DownloadArchiveAsync_ThrowsNoHAtHClientException_WhenHathClientMissing()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse(
+        using var scope = CreateEngineScope(static _ => HtmlResponse(
             "<p>You must have a H@H client assigned to your account to use this feature.</p>"));
 
         var ex = await Assert.ThrowsAsync<NoHAtHClientException>(
@@ -767,7 +761,7 @@ public sealed class EhTagDatabaseAndEngineTests
     [Fact]
     public async Task AddFavoritesAsync_RejectsOutOfRangeCategory_WithoutAnyRequest()
     {
-        using var scope = EngineScope.Create(static _ => HtmlResponse("<html></html>"));
+        using var scope = CreateEngineScope(static _ => HtmlResponse("<html></html>"));
 
         var ex = await Assert.ThrowsAsync<EhException>(
             () => scope.Engine.AddFavoritesAsync(1L, "0123456789", dstCat: 99));
@@ -820,12 +814,10 @@ public sealed class EhTagDatabaseAndEngineTests
     private static string FixtureHtml(string fileName) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "input", "parser", fileName), Encoding.UTF8);
 
-    private static string CreateTempDirectory()
-    {
-        string directory = Path.Combine(Path.GetTempPath(), "ehviewer-tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        return directory;
-    }
+    private EngineScope CreateEngineScope(
+        Func<HttpRequestMessage, HttpResponseMessage> responder,
+        Action<EhClientSettings>? configure = null) =>
+        EngineScope.Create(CreateTempDirectory("ehviewer-engine"), responder, configure);
 
     /// <summary>
     /// The request builder stores the referer as <c>https://e-hentai.org</c> (no trailing slash),
@@ -836,21 +828,6 @@ public sealed class EhTagDatabaseAndEngineTests
     {
         Assert.True(request.Headers.TryGetValue("Referer", out string? actual), "missing Referer header");
         Assert.Equal(new Uri(expectedReferer).AbsoluteUri, new Uri(actual!).AbsoluteUri);
-    }
-
-    private static void TryDeleteDirectory(string directory)
-    {
-        try
-        {
-            if (Directory.Exists(directory))
-            {
-                Directory.Delete(directory, recursive: true);
-            }
-        }
-        catch
-        {
-            // Best-effort cleanup; these directories are disposable temp fixtures.
-        }
     }
 
     // ==================== test doubles ====================
@@ -945,10 +922,10 @@ public sealed class EhTagDatabaseAndEngineTests
         public EhEngine Engine { get; }
 
         public static EngineScope Create(
+            string directory,
             Func<HttpRequestMessage, HttpResponseMessage> responder,
             Action<EhClientSettings>? configure = null)
         {
-            string directory = CreateTempDirectory();
             var database = new EhDatabase(Path.Combine(directory, "eh.db"));
             var handler = new RecordingMessageHandler(responder);
             var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
@@ -971,7 +948,6 @@ public sealed class EhTagDatabaseAndEngineTests
             HttpClient.Dispose();
             Handler.Dispose();
             Database.Dispose();
-            TryDeleteDirectory(Directory);
         }
     }
 }

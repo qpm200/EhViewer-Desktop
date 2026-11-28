@@ -13,28 +13,13 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Batch6ConfigAndShellTests : IDisposable
+public sealed class ConfigAndShellTests : DesktopTestBase
 {
     private readonly string _root;
 
-    public Batch6ConfigAndShellTests()
+    public ConfigAndShellTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), "EhViewerBatch6Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
+        _root = CreateTempDirectory("eh-config-shell");
     }
 
     [Fact]
@@ -51,14 +36,14 @@ public sealed class Batch6ConfigAndShellTests : IDisposable
                 ShowJpnTitle = true,
                 ShowGalleryPages = true,
                 ShowHoverPreview = false,
-                ListPageSizeIndex = 2, // 100
-                ThumbResolutionIndex = 2, // 300px
+                ListPageSizeIndex = 2,
+                ThumbResolutionIndex = 2,
                 FixThumbUrl = true,
-                ImageResolutionIndex = 3, // 1280px
+                ImageResolutionIndex = 3,
                 SaveParseErrorBody = false,
 
-                FavoritesSortIndex = 1, // published time 'p'
-                CommentsSortIndex = 2, // score 's'
+                FavoritesSortIndex = 1,
+                CommentsSortIndex = 2,
                 EnablePopularOnHome = false,
 
                 BuiltInHosts = false,
@@ -287,7 +272,7 @@ public sealed class Batch6ConfigAndShellTests : IDisposable
 
         string? stored = services.Settings.SecurityPinHash;
         Assert.NotNull(stored);
-        Assert.StartsWith(DpapiCredentialProtector.EnvelopePrefix, stored!, StringComparison.Ordinal);
+        Assert.True(DpapiCredentialProtector.Instance.IsProtected(stored));
         Assert.DoesNotContain("2468", stored!, StringComparison.Ordinal);
         Assert.True(WindowsAppLockService.IsLockEnabled(services.Settings));
         Assert.True(WindowsAppLockService.VerifyPin("2468", stored));

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Wave4ShellThemePerfTests
+public sealed class ShellThemePerformanceTests : DesktopTestBase
 {
     private sealed class FakeResourceDictionary
     {
@@ -267,10 +267,9 @@ public sealed class Wave4ShellThemePerfTests
     [Fact]
     public void MainWindow_OverlaysUseDeferredLoadingAndUnloadedGuards()
     {
-        string repoRoot = FindDesktopRepoRoot();
-        string mainWindowXamlPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "MainWindow.xaml");
-        string mainWindowCsPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "MainWindow.xaml.cs");
-        string mainWindowShellPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "MainWindow.Shell.cs");
+        string mainWindowXamlPath = ResolveDesktopSourceFile("MainWindow.xaml");
+        string mainWindowCsPath = ResolveDesktopSourceFile("MainWindow.xaml.cs");
+        string mainWindowShellPath = ResolveDesktopSourceFile("MainWindow.Shell.cs");
 
         XDocument xaml = XDocument.Load(mainWindowXamlPath);
         XNamespace xNs = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -307,21 +306,5 @@ public sealed class Wave4ShellThemePerfTests
         string mainWindowShellCs = File.ReadAllText(mainWindowShellPath);
         Assert.Contains("RootGrid.FindName(nameof(PrivacyLockOverlay))", mainWindowShellCs, StringComparison.Ordinal);
         Assert.Contains("_privacyLockOverlayLoaded && PrivacyLockOverlay is not null", mainWindowShellCs, StringComparison.Ordinal);
-    }
-
-    private static string FindDesktopRepoRoot()
-    {
-        string? dir = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(dir))
-        {
-            if (File.Exists(Path.Combine(dir, "EhViewer.Desktop.slnx")))
-            {
-                return dir;
-            }
-
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate EhViewer.Desktop.slnx above AppContext.BaseDirectory.");
     }
 }

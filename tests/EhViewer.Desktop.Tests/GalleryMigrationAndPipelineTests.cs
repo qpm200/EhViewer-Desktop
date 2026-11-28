@@ -23,40 +23,19 @@ using Xunit;
 namespace EhViewer.Desktop.Tests;
 
 /// <summary>
-/// Regression and integration tests for desktop parity work:
+/// Regression and integration tests for M2–M5 parity work:
 /// multi-page lazy preview url resolution, H@H <c>?nl=</c> retry &amp; anti-hijack guard,
 /// &gt;40MP scanline downsampling, RTL reader semantics &amp; scoped cache eviction,
 /// startup pending-download resumption, archive import, Android migration,
 /// tag query formatting, and multi-window deduplication.
 /// </summary>
-public sealed class M2ToM5CoverageTests : IDisposable
+public sealed class GalleryMigrationAndPipelineTests : DesktopTestBase
 {
-    private readonly string _root = Path.Combine(
-        Path.GetTempPath(),
-        "EhViewerTests",
-        "M2ToM5",
-        Guid.NewGuid().ToString("N"));
+    private readonly string _root;
 
-    public M2ToM5CoverageTests()
+    public GalleryMigrationAndPipelineTests()
     {
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
+        _root = CreateTempDirectory("eh-gallery-pipeline");
     }
 
     [Fact]

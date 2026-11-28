@@ -190,7 +190,7 @@ public sealed class ReaderPageCacheLeaseTests
 }
 
 /// <summary>Resume-detection regression tests for the downloader.</summary>
-public sealed class DownloadResumeTests
+public sealed class DownloadResumeTests : DesktopTestBase
 {
     [Theory]
     [InlineData(".jpg")]
@@ -200,7 +200,7 @@ public sealed class DownloadResumeTests
     [InlineData(".gif")]
     public void TryFindExistingPageFile_RecognisesAnySupportedExtension(string extension)
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             string expected = Path.Combine(folder, "00000007" + extension);
@@ -218,7 +218,7 @@ public sealed class DownloadResumeTests
     [Fact]
     public void TryFindExistingPageFile_EmptyFile_IsTreatedAsMissing()
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             File.WriteAllBytes(Path.Combine(folder, "00000003.png"), []);
@@ -235,7 +235,7 @@ public sealed class DownloadResumeTests
     [Fact]
     public void TryFindExistingPageFile_MissingIndex_ReturnsFalse()
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             File.WriteAllBytes(Path.Combine(folder, "00000001.jpg"), [1]);
@@ -275,17 +275,10 @@ public sealed class DownloadResumeTests
         Assert.False(DownloadManager.IsPlainText([0xFF, 0xD8, 0xFF, 0x00]));
         Assert.True(DownloadManager.IsPlainText([]));
     }
-
-    private static string CreateTempFolder()
-    {
-        string folder = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        return folder;
-    }
 }
 
 /// <summary>Progress-file path and parse behaviour shared with Android's download layout.</summary>
-public sealed class ReaderProgressTests
+public sealed class ReaderProgressTests : DesktopTestBase
 {
     [Fact]
     public void BuildProgressPath_UsesGidTitleFolderAndDotFile()
@@ -322,7 +315,7 @@ public sealed class ReaderProgressTests
     [Fact]
     public void ReadSavedStartPage_ValidFile_ReturnsRecordedPage()
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             string file = Path.Combine(folder, ".ehviewer");
@@ -339,7 +332,7 @@ public sealed class ReaderProgressTests
     [Fact]
     public void ReadSavedStartPage_CorruptFile_ReturnsZero()
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             string file = Path.Combine(folder, ".ehviewer");
@@ -356,7 +349,7 @@ public sealed class ReaderProgressTests
     [Fact]
     public void ReadExistingProgress_PreservesPTokenMap()
     {
-        string folder = CreateTempFolder();
+        string folder = CreateTempDirectory("eh-desktop-layer");
         try
         {
             string file = Path.Combine(folder, ".ehviewer");
@@ -396,13 +389,6 @@ public sealed class ReaderProgressTests
 
         using var stream = new FileStream(file, FileMode.Create, FileAccess.Write);
         info.Write(stream);
-    }
-
-    private static string CreateTempFolder()
-    {
-        string folder = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        return folder;
     }
 }
 
@@ -485,12 +471,12 @@ public sealed class ThumbnailSamplingTests
 }
 
 /// <summary>The tag database is optional: a missing or unreachable file must not break search.</summary>
-public sealed class TagTranslationSourceTests
+public sealed class TagTranslationSourceTests : DesktopTestBase
 {
     [Fact]
     public async Task EnsureLoadedAsync_UnreachableUpstream_StaysNullWithoutThrowing()
     {
-        string root = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
+        string root = CreateTempDirectory("eh-desktop-layer");
         AppPaths paths = AppPaths.CreateAt(root);
         paths.EnsureCreated();
 
@@ -536,12 +522,12 @@ public sealed class TagTranslationSourceTests
 }
 
 /// <summary>Disk thumbnail cache hysteresis eviction and fast-path direct pixel copy checks.</summary>
-public sealed class PerformanceRegressionTests
+public sealed class PerformanceRegressionTests : DesktopTestBase
 {
     [Fact]
     public void ThumbnailDiskCache_EvictsWithHysteresisAndReplacesSizeCleanly()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
+        string dir = CreateTempDirectory("eh-desktop-layer");
         try
         {
             // 1 MB budget -> 85% hysteresis target = ~870 KB.
@@ -593,7 +579,7 @@ public sealed class PerformanceRegressionTests
     [Fact]
     public async Task ThumbnailDiskCache_ComputeUrlKey_AndConcurrentSets_RemainConsistent()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
+        string dir = CreateTempDirectory("eh-desktop-layer");
         try
         {
             const string url = "https://ehgt.org/t/sample.jpg";
@@ -628,7 +614,7 @@ public sealed class PerformanceRegressionTests
     [Fact]
     public async Task ThumbnailService_CrossWidthLoads_ReuseSingleDiskDownload()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
+        string dir = CreateTempDirectory("eh-desktop-layer");
         try
         {
             using var bmp = new SKBitmap(640, 480, SKColorType.Bgra8888, SKAlphaType.Opaque);
@@ -707,7 +693,7 @@ public sealed class PerformanceRegressionTests
     [Fact]
     public async Task ThumbnailService_LoadRawBytesAsync_ReusesDiskCacheAcrossCalls()
     {
-        string dir = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
+        string dir = CreateTempDirectory("eh-desktop-layer");
         try
         {
             byte[] sampleBytes = Enumerable.Range(0, 256).Select(static i => (byte)i).ToArray();

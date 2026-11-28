@@ -4,7 +4,7 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Wave6ControlsMotionTests
+public sealed class ControlsMotionTests : DesktopTestBase
 {
     [Fact]
     public void ReaderPage_ComputeHudChromeTargets_CoversAllBooleanCombinations()
@@ -81,9 +81,8 @@ public sealed class Wave6ControlsMotionTests
     [Fact]
     public void FabLayoutControl_UsesGpuMotionAndRotationWithoutGlyphSwap()
     {
-        string repoRoot = FindDesktopRepoRoot();
-        string xamlPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "Controls", "FabLayoutControl.xaml");
-        string csPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "Controls", "FabLayoutControl.xaml.cs");
+        string xamlPath = ResolveDesktopSourceFile("Controls", "FabLayoutControl.xaml");
+        string csPath = ResolveDesktopSourceFile("Controls", "FabLayoutControl.xaml.cs");
 
         XDocument xaml = XDocument.Load(xamlPath);
         XNamespace xNs = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -109,8 +108,7 @@ public sealed class Wave6ControlsMotionTests
     [Fact]
     public void SearchLayoutControl_UsesGpuMotionForOverlayTabsAndAdvancePanel()
     {
-        string repoRoot = FindDesktopRepoRoot();
-        string csPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "Controls", "SearchLayoutControl.xaml.cs");
+        string csPath = ResolveDesktopSourceFile("Controls", "SearchLayoutControl.xaml.cs");
 
         string cs = File.ReadAllText(csPath);
         Assert.Contains("ThemeMotionHelper.AnimateOverlayShow", cs, StringComparison.Ordinal);
@@ -142,8 +140,7 @@ public sealed class Wave6ControlsMotionTests
     [Fact]
     public void ReaderPage_UsesGpuHudTransitionsWithoutDependentAnimationsOrCpuStoryboards()
     {
-        string repoRoot = FindDesktopRepoRoot();
-        string csPath = Path.Combine(repoRoot, "src", "EhViewer.Desktop", "Views", "ReaderPage.xaml.cs");
+        string csPath = ResolveDesktopSourceFile("Views", "ReaderPage.xaml.cs");
 
         string cs = File.ReadAllText(csPath);
         Assert.Contains("SyncHudChromeState(animate: false);", cs, StringComparison.Ordinal);
@@ -154,21 +151,5 @@ public sealed class Wave6ControlsMotionTests
         Assert.Contains("_hudHideTimer.Stop();", cs, StringComparison.Ordinal);
         Assert.DoesNotContain("EnableDependentAnimation", cs, StringComparison.Ordinal);
         Assert.DoesNotContain("Storyboard", cs, StringComparison.Ordinal);
-    }
-
-    private static string FindDesktopRepoRoot()
-    {
-        string? dir = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(dir))
-        {
-            if (File.Exists(Path.Combine(dir, "EhViewer.Desktop.slnx")))
-            {
-                return dir;
-            }
-
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate EhViewer.Desktop.slnx above AppContext.BaseDirectory.");
     }
 }

@@ -567,11 +567,35 @@ public sealed partial class MainWindow
 
                 dialog.PrimaryButtonClick += (_, args) =>
                 {
-                    if (!WindowsAppLockService.VerifyPin(pinBox.Password.Trim(), settings.SecurityPinHash))
+                    PinVerificationResult verification = WindowsAppLockService.VerifyPinDetailed(
+                        pinBox.Password.Trim(),
+                        settings.SecurityPinHash);
+
+                    if (verification.IsSuccess)
                     {
-                        statusText.Text = "PIN 不正确，请重试。";
-                        args.Cancel = true;
+                        if (verification.Status == PinVerifyStatus.ValidNeedsMigration
+                            && !string.IsNullOrWhiteSpace(verification.MigratedProtectedHash))
+                        {
+                            string migratedHash = verification.MigratedProtectedHash;
+                            _services.UpdateSettings(s => s.SecurityPinHash = migratedHash);
+                        }
+
+                        return;
                     }
+
+                    statusText.Text = verification.Status switch
+                    {
+                        PinVerifyStatus.LockedOut =>
+                            $"错误次数过多，请在 {Math.Max(1, (int)Math.Ceiling(verification.RetryAfter.TotalSeconds))} 秒后重试。",
+                        PinVerifyStatus.ProtectionError =>
+                            "安全锁凭据解密失败，请使用 Windows Hello 或重置本地 PIN。",
+                        PinVerifyStatus.InvalidFormat =>
+                            "安全锁凭据格式异常，请使用 Windows Hello 或重新设置 PIN。",
+                        _ when verification.RetryAfter > TimeSpan.Zero =>
+                            $"PIN 不正确，已触发冷却，请在 {Math.Max(1, (int)Math.Ceiling(verification.RetryAfter.TotalSeconds))} 秒后重试。",
+                        _ => "PIN 不正确，请重试。"
+                    };
+                    args.Cancel = true;
                 };
 
                 ContentDialogResult result = await dialog.ShowAsync();

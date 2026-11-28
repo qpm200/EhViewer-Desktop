@@ -9,22 +9,26 @@ namespace EhViewer.Core.Network;
 /// </summary>
 public sealed class EhHttpClientFactory : IDisposable
 {
+    private static readonly TimeSpan DefaultRetiredHandlerGracePeriod = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DefaultPerAttemptConnectTimeout = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan DefaultLastAttemptConnectTimeout = TimeSpan.FromSeconds(8);
+
     private readonly ICookieStore _cookieStore;
     private readonly EhHosts _hosts;
     private readonly IEhClientSettings _settings;
     private readonly object _gate = new();
+    private readonly HashSet<ProxyHandlerLease> _retiredLeases = [];
+    private readonly Dictionary<ProxyHandlerLease, Timer> _retirementTimers = [];
 
     private SocketsHttpHandler? _directStandardHandler;
-    private SocketsHttpHandler? _proxyStandardHandler;
     private SocketsHttpHandler? _directImageHandler;
-    private SocketsHttpHandler? _proxyImageHandler;
     private HttpMessageInvoker? _directStandardInvoker;
-    private HttpMessageInvoker? _proxyStandardInvoker;
     private HttpMessageInvoker? _directImageInvoker;
-    private HttpMessageInvoker? _proxyImageInvoker;
+    private ProxyHandlerLease? _currentProxyLease;
     private EhProxyType _configuredProxyType;
     private string? _configuredProxyIp;
     private int _configuredProxyPort;
+    private bool _disposed;
 
     private HttpClient? _standardClient;
     private HttpClient? _imageClient;
@@ -39,15 +43,37 @@ public sealed class EhHttpClientFactory : IDisposable
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
     }
 
-    public HttpClient StandardClient
+    internal TimeSpan RetiredHandlerGracePeriod { get; set; } = DefaultRetiredHandlerGracePeriod;
+
+    internal int PendingRetiredLeaseCount
     {
         get
         {
             lock (_gate)
             {
-                EnsureHandlersCurrent();
-                return _standardClient ??= CreateClient(isImageClient: false, timeout: TimeSpan.FromSeconds(30));
+                return _retiredLeases.Count;
             }
+        }
+    }
+
+    public HttpClient StandardClient
+    {
+        get
+        {
+            ProxyHandlerLease? retiredLease;
+            HttpClient client;
+            lock (_gate)
+            {
+                retiredLease = EnsureHandlersCurrentLocked();
+                client = _standardClient ??= CreateClient(isImageClient: false, timeout: TimeSpan.FromSeconds(30));
+            }
+
+            if (retiredLease is not null)
+            {
+                RetireLeaseOutsideLock(retiredLease);
+            }
+
+            return client;
         }
     }
 
@@ -55,19 +81,34 @@ public sealed class EhHttpClientFactory : IDisposable
     {
         get
         {
+            ProxyHandlerLease? retiredLease;
+            HttpClient client;
             lock (_gate)
             {
-                EnsureHandlersCurrent();
-                return _imageClient ??= CreateClient(isImageClient: true, timeout: TimeSpan.FromSeconds(30));
+                retiredLease = EnsureHandlersCurrentLocked();
+                client = _imageClient ??= CreateClient(isImageClient: true, timeout: TimeSpan.FromSeconds(30));
             }
+
+            if (retiredLease is not null)
+            {
+                RetireLeaseOutsideLock(retiredLease);
+            }
+
+            return client;
         }
     }
 
     public void InvalidateProxyConfiguration()
     {
+        ProxyHandlerLease? retiredLease;
         lock (_gate)
         {
-            ResetProxyHandlersLocked();
+            retiredLease = DetachCurrentProxyLeaseLocked();
+        }
+
+        if (retiredLease is not null)
+        {
+            RetireLeaseOutsideLock(retiredLease);
         }
     }
 
@@ -79,6 +120,13 @@ public sealed class EhHttpClientFactory : IDisposable
             followRedirects: !isImageClient);
     }
 
+    internal (HttpMessageInvoker Invoker, ProxyHandlerLease? Lease) AcquireInnerInvokerForTesting(
+        Uri requestUri,
+        bool isImageClient = false)
+    {
+        return SelectInnerInvoker(requestUri, isImageClient);
+    }
+
     private HttpClient CreateClient(bool isImageClient, TimeSpan timeout)
     {
         return new HttpClient(CreateTransportHandler(isImageClient), disposeHandler: true)
@@ -87,59 +135,148 @@ public sealed class EhHttpClientFactory : IDisposable
         };
     }
 
-    private HttpMessageInvoker SelectInnerInvoker(Uri requestUri, bool isImageClient)
+    private (HttpMessageInvoker Invoker, ProxyHandlerLease? Lease) SelectInnerInvoker(Uri requestUri, bool isImageClient)
     {
         bool useProxy = ShouldUseProxy(requestUri);
+        ProxyHandlerLease? retiredLease;
+        (HttpMessageInvoker Invoker, ProxyHandlerLease? Lease) selected;
+
         lock (_gate)
         {
-            EnsureHandlersCurrent();
-
-            if (isImageClient)
-            {
-                if (!useProxy)
-                {
-                    _directImageHandler ??= CreateDirectSocketsHandler(connectTimeout: TimeSpan.FromSeconds(20));
-                    return _directImageInvoker ??= new HttpMessageInvoker(_directImageHandler, disposeHandler: false);
-                }
-
-                _proxyImageHandler ??= CreateProxySocketsHandler(connectTimeout: TimeSpan.FromSeconds(20));
-                return _proxyImageInvoker ??= new HttpMessageInvoker(_proxyImageHandler, disposeHandler: false);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            retiredLease = EnsureHandlersCurrentLocked();
 
             if (!useProxy)
             {
-                _directStandardHandler ??= CreateDirectSocketsHandler(connectTimeout: TimeSpan.FromSeconds(10));
-                return _directStandardInvoker ??= new HttpMessageInvoker(_directStandardHandler, disposeHandler: false);
-            }
+                HttpMessageInvoker directInvoker;
+                if (isImageClient)
+                {
+                    _directImageHandler ??= CreateDirectSocketsHandler(connectTimeout: TimeSpan.FromSeconds(20));
+                    directInvoker = _directImageInvoker ??= new HttpMessageInvoker(_directImageHandler, disposeHandler: false);
+                }
+                else
+                {
+                    _directStandardHandler ??= CreateDirectSocketsHandler(connectTimeout: TimeSpan.FromSeconds(10));
+                    directInvoker = _directStandardInvoker ??= new HttpMessageInvoker(_directStandardHandler, disposeHandler: false);
+                }
 
-            _proxyStandardHandler ??= CreateProxySocketsHandler(connectTimeout: TimeSpan.FromSeconds(10));
-            return _proxyStandardInvoker ??= new HttpMessageInvoker(_proxyStandardHandler, disposeHandler: false);
+                selected = (directInvoker, null);
+            }
+            else
+            {
+                ProxyHandlerLease lease = _currentProxyLease ??= CreateProxyLeaseLocked();
+                if (!lease.TryAcquire())
+                {
+                    lease = CreateProxyLeaseLocked();
+                    _currentProxyLease = lease;
+                    lease.TryAcquire();
+                }
+
+                HttpMessageInvoker proxyInvoker = lease.GetOrCreateInvoker(isImageClient, CreateProxySocketsHandler);
+                selected = (proxyInvoker, lease);
+            }
         }
+
+        if (retiredLease is not null)
+        {
+            RetireLeaseOutsideLock(retiredLease);
+        }
+
+        return selected;
     }
 
-    private void EnsureHandlersCurrent()
+    private ProxyHandlerLease? EnsureHandlersCurrentLocked()
     {
         if (_configuredProxyType != _settings.ProxyType
             || !string.Equals(_configuredProxyIp, _settings.ProxyIp, StringComparison.Ordinal)
             || _configuredProxyPort != _settings.ProxyPort)
         {
-            ResetProxyHandlersLocked();
+            ProxyHandlerLease? retiredLease = DetachCurrentProxyLeaseLocked();
             _configuredProxyType = _settings.ProxyType;
             _configuredProxyIp = _settings.ProxyIp;
             _configuredProxyPort = _settings.ProxyPort;
+            return retiredLease;
+        }
+
+        return null;
+    }
+
+    private ProxyHandlerLease CreateProxyLeaseLocked()
+    {
+        return new ProxyHandlerLease(OnLeaseReachedZeroRefs);
+    }
+
+    private ProxyHandlerLease? DetachCurrentProxyLeaseLocked()
+    {
+        ProxyHandlerLease? oldLease = _currentProxyLease;
+        if (oldLease is null)
+        {
+            return null;
+        }
+
+        _currentProxyLease = null;
+        _retiredLeases.Add(oldLease);
+        return oldLease;
+    }
+
+    private static void RetireLeaseOutsideLock(ProxyHandlerLease oldLease)
+    {
+        oldLease.Release();
+    }
+
+    private void OnLeaseReachedZeroRefs(ProxyHandlerLease lease)
+    {
+        TimeSpan gracePeriod = RetiredHandlerGracePeriod;
+        if (gracePeriod <= TimeSpan.Zero)
+        {
+            FinalizeRetiredLease(lease);
+            return;
+        }
+
+        bool disposeImmediately = false;
+        lock (_gate)
+        {
+            if (_disposed)
+            {
+                _retiredLeases.Remove(lease);
+                disposeImmediately = true;
+            }
+            else if (!_retirementTimers.ContainsKey(lease))
+            {
+                _retiredLeases.Add(lease);
+                var timer = new Timer(
+                    static state =>
+                    {
+                        var (factory, targetLease) = ((EhHttpClientFactory, ProxyHandlerLease))state!;
+                        factory.FinalizeRetiredLease(targetLease);
+                    },
+                    (this, lease),
+                    dueTime: gracePeriod,
+                    period: Timeout.InfiniteTimeSpan);
+                _retirementTimers[lease] = timer;
+            }
+        }
+
+        if (disposeImmediately)
+        {
+            lease.DisposeHandlersNow();
         }
     }
 
-    private void ResetProxyHandlersLocked()
+    private void FinalizeRetiredLease(ProxyHandlerLease lease)
     {
-        _proxyStandardInvoker?.Dispose();
-        _proxyImageInvoker?.Dispose();
-        _proxyStandardHandler?.Dispose();
-        _proxyImageHandler?.Dispose();
-        _proxyStandardInvoker = null;
-        _proxyImageInvoker = null;
-        _proxyStandardHandler = null;
-        _proxyImageHandler = null;
+        Timer? timer = null;
+        lock (_gate)
+        {
+            _retiredLeases.Remove(lease);
+            if (_retirementTimers.Remove(lease, out Timer? existingTimer))
+            {
+                timer = existingTimer;
+            }
+        }
+
+        timer?.Dispose();
+        lease.DisposeHandlersNow();
     }
 
     private bool ShouldUseProxy(Uri requestUri)
@@ -225,6 +362,48 @@ public sealed class EhHttpClientFactory : IDisposable
         return handler;
     }
 
+    internal static async Task<T> ConnectCandidatesWithTimeoutAsync<T>(
+        IReadOnlyList<IPAddress> addresses,
+        Func<IPAddress, CancellationToken, Task<T>> connectAttempt,
+        TimeSpan perAttemptTimeout,
+        CancellationToken cancellationToken,
+        TimeSpan? lastAttemptTimeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(addresses);
+        ArgumentNullException.ThrowIfNull(connectAttempt);
+
+        Exception? lastException = null;
+        int count = addresses.Count;
+
+        for (int i = 0; i < count; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            IPAddress ip = addresses[i];
+            bool isLast = i == count - 1;
+            TimeSpan attemptTimeout = isLast && lastAttemptTimeout.HasValue
+                ? lastAttemptTimeout.Value
+                : perAttemptTimeout;
+
+            using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (attemptTimeout > TimeSpan.Zero && attemptTimeout != Timeout.InfiniteTimeSpan)
+            {
+                attemptCts.CancelAfter(attemptTimeout);
+            }
+
+            try
+            {
+                return await connectAttempt(ip, attemptCts.Token).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                lastException = ex;
+            }
+        }
+
+        throw lastException ?? new SocketException((int)SocketError.HostNotFound);
+    }
+
     private async ValueTask<Stream> ConnectWithEhHostsAsync(
         SocketsHttpConnectionContext context,
         CancellationToken cancellationToken)
@@ -233,43 +412,180 @@ public sealed class EhHttpClientFactory : IDisposable
         int port = context.DnsEndPoint.Port;
 
         IReadOnlyList<IPAddress> addresses = await _hosts.LookupAsync(host, cancellationToken).ConfigureAwait(false);
-        Exception? lastException = null;
-
-        foreach (IPAddress ip in addresses)
-        {
-            var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+        return await ConnectCandidatesWithTimeoutAsync(
+            addresses,
+            async (ip, attemptToken) =>
             {
-                NoDelay = true
-            };
-            try
-            {
-                await socket.ConnectAsync(new IPEndPoint(ip, port), cancellationToken).ConfigureAwait(false);
-                return new NetworkStream(socket, ownsSocket: true);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-            {
-                lastException = ex;
-                socket.Dispose();
-            }
-        }
-
-        throw lastException ?? new SocketException((int)SocketError.HostNotFound);
+                var socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    NoDelay = true
+                };
+                try
+                {
+                    await socket.ConnectAsync(new IPEndPoint(ip, port), attemptToken).ConfigureAwait(false);
+                    return (Stream)new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            },
+            DefaultPerAttemptConnectTimeout,
+            cancellationToken,
+            DefaultLastAttemptConnectTimeout).ConfigureAwait(false);
     }
 
     public void Dispose()
     {
+        List<Timer> timersToDispose;
+        List<ProxyHandlerLease> leasesToDispose;
+
         lock (_gate)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            timersToDispose = [.. _retirementTimers.Values];
+            _retirementTimers.Clear();
+
+            leasesToDispose = [.. _retiredLeases];
+            _retiredLeases.Clear();
+
+            if (_currentProxyLease is not null)
+            {
+                leasesToDispose.Add(_currentProxyLease);
+                _currentProxyLease = null;
+            }
+
             _standardClient?.Dispose();
             _imageClient?.Dispose();
             _directStandardInvoker?.Dispose();
-            _proxyStandardInvoker?.Dispose();
             _directImageInvoker?.Dispose();
-            _proxyImageInvoker?.Dispose();
             _directStandardHandler?.Dispose();
-            _proxyStandardHandler?.Dispose();
             _directImageHandler?.Dispose();
-            _proxyImageHandler?.Dispose();
+
+            _standardClient = null;
+            _imageClient = null;
+            _directStandardInvoker = null;
+            _directImageInvoker = null;
+            _directStandardHandler = null;
+            _directImageHandler = null;
+        }
+
+        foreach (Timer timer in timersToDispose)
+        {
+            timer.Dispose();
+        }
+
+        foreach (ProxyHandlerLease lease in leasesToDispose)
+        {
+            lease.DisposeHandlersNow();
+        }
+    }
+
+    internal sealed class ProxyHandlerLease
+    {
+        private readonly object _leaseGate = new();
+        private readonly Action<ProxyHandlerLease>? _onZeroRefs;
+        private SocketsHttpHandler? _proxyStandardHandler;
+        private HttpMessageInvoker? _proxyStandardInvoker;
+        private SocketsHttpHandler? _proxyImageHandler;
+        private HttpMessageInvoker? _proxyImageInvoker;
+        private int _refCount = 1;
+        private int _disposed;
+
+        public ProxyHandlerLease(Action<ProxyHandlerLease>? onZeroRefs = null)
+        {
+            _onZeroRefs = onZeroRefs;
+        }
+
+        internal bool IsDisposed => Volatile.Read(ref _disposed) != 0;
+
+        internal int ActiveRefCount => Volatile.Read(ref _refCount);
+
+        internal bool TryAcquire()
+        {
+            while (true)
+            {
+                int current = Volatile.Read(ref _refCount);
+                if (current <= 0)
+                {
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref _refCount, current + 1, current) == current)
+                {
+                    return true;
+                }
+            }
+        }
+
+        internal void Release()
+        {
+            int remaining = Interlocked.Decrement(ref _refCount);
+            if (remaining == 0)
+            {
+                _onZeroRefs?.Invoke(this);
+            }
+            else if (remaining < 0)
+            {
+                Interlocked.CompareExchange(ref _refCount, 0, remaining);
+            }
+        }
+
+        internal HttpMessageInvoker GetOrCreateInvoker(
+            bool isImageClient,
+            Func<TimeSpan, SocketsHttpHandler> createProxyHandler)
+        {
+            lock (_leaseGate)
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+                if (isImageClient)
+                {
+                    _proxyImageHandler ??= createProxyHandler(TimeSpan.FromSeconds(20));
+                    return _proxyImageInvoker ??= new HttpMessageInvoker(_proxyImageHandler, disposeHandler: false);
+                }
+
+                _proxyStandardHandler ??= createProxyHandler(TimeSpan.FromSeconds(10));
+                return _proxyStandardInvoker ??= new HttpMessageInvoker(_proxyStandardHandler, disposeHandler: false);
+            }
+        }
+
+        internal void DisposeHandlersNow()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            HttpMessageInvoker? standardInvoker;
+            HttpMessageInvoker? imageInvoker;
+            SocketsHttpHandler? standardHandler;
+            SocketsHttpHandler? imageHandler;
+
+            lock (_leaseGate)
+            {
+                standardInvoker = _proxyStandardInvoker;
+                imageInvoker = _proxyImageInvoker;
+                standardHandler = _proxyStandardHandler;
+                imageHandler = _proxyImageHandler;
+
+                _proxyStandardInvoker = null;
+                _proxyImageInvoker = null;
+                _proxyStandardHandler = null;
+                _proxyImageHandler = null;
+            }
+
+            standardInvoker?.Dispose();
+            imageInvoker?.Dispose();
+            standardHandler?.Dispose();
+            imageHandler?.Dispose();
         }
     }
 
@@ -279,7 +595,7 @@ public sealed class EhHttpClientFactory : IDisposable
     /// </summary>
     internal sealed class EhCookieAndRedirectHandler(
         ICookieStore cookieStore,
-        Func<Uri, HttpMessageInvoker> selectInvoker,
+        Func<Uri, (HttpMessageInvoker Invoker, ProxyHandlerLease? Lease)> selectInvoker,
         bool followRedirects) : HttpMessageHandler
     {
         private const int MaxRedirects = 20;
@@ -296,8 +612,16 @@ public sealed class EhHttpClientFactory : IDisposable
             while (true)
             {
                 AttachCookies(current);
-                HttpMessageInvoker invoker = selectInvoker(current.RequestUri!);
-                HttpResponseMessage response = await invoker.SendAsync(current, cancellationToken).ConfigureAwait(false);
+                (HttpMessageInvoker invoker, ProxyHandlerLease? lease) = selectInvoker(current.RequestUri!);
+                HttpResponseMessage response;
+                try
+                {
+                    response = await invoker.SendAsync(current, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    lease?.Release();
+                }
 
                 SaveResponseCookies(current.RequestUri!, response);
 

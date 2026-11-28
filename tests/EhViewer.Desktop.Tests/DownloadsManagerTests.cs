@@ -15,28 +15,13 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Batch4DownloadsFullTests : IDisposable
+public sealed class DownloadsManagerTests : DesktopTestBase
 {
     private readonly string _root;
 
-    public Batch4DownloadsFullTests()
+    public DownloadsManagerTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), "EhViewerBatch4Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
+        _root = CreateTempDirectory("eh-downloads");
     }
 
     [Fact]

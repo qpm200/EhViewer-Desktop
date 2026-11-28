@@ -17,6 +17,7 @@ namespace EhViewer.Desktop.Services;
 public sealed class AppServices : IDisposable, IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
+    private int _disposed;
 
     private AppServices(ServiceProvider provider, AppPaths paths, DesktopSettingsStore settingsStore)
     {
@@ -45,19 +46,55 @@ public sealed class AppServices : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(paths);
 
-        if (loggerFactory is null)
-        {
-            loggerFactory = LoggerFactory.Create(static builder => builder.SetMinimumLevel(LogLevel.Information));
-        }
-
         paths.EnsureCreated();
 
         var settingsStore = new DesktopSettingsStore(paths.SettingsFilePath);
         DesktopSettings initialSettings = settingsStore.Load();
 
+        return CreateFromLoadedState(paths, settingsStore, initialSettings, loggerFactory);
+    }
+
+    /// <summary>
+    /// Asynchronously prepares on-disk directories and loads persisted settings off the caller thread
+    /// before composing the in-memory service graph.
+    /// </summary>
+    public static async Task<AppServices> CreateAsync(
+        AppPaths paths,
+        ILoggerFactory? loggerFactory = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        (DesktopSettingsStore settingsStore, DesktopSettings initialSettings) = await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            paths.EnsureCreated();
+
+            var store = new DesktopSettingsStore(paths.SettingsFilePath);
+            DesktopSettings settings = store.Load();
+            return (store, settings);
+        }, cancellationToken).ConfigureAwait(false);
+
+        return CreateFromLoadedState(paths, settingsStore, initialSettings, loggerFactory);
+    }
+
+    private static AppServices CreateFromLoadedState(
+        AppPaths paths,
+        DesktopSettingsStore settingsStore,
+        DesktopSettings initialSettings,
+        ILoggerFactory? loggerFactory)
+    {
         var services = new ServiceCollection();
-        services.AddSingleton(loggerFactory);
-        services.AddLogging();
+        if (loggerFactory is null)
+        {
+            services.AddLogging(static builder => builder.SetMinimumLevel(LogLevel.Information));
+        }
+        else
+        {
+            services.AddSingleton(loggerFactory);
+            services.AddLogging();
+        }
 
         services.AddSingleton(paths);
         services.AddSingleton(settingsStore);
@@ -224,6 +261,11 @@ public sealed class AppServices : IDisposable, IAsyncDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
         try
         {
             _provider.Dispose();
@@ -234,7 +276,15 @@ public sealed class AppServices : IDisposable, IAsyncDisposable
         }
     }
 
-    public ValueTask DisposeAsync() => _provider.DisposeAsync();
+    public ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        return _provider.DisposeAsync();
+    }
 }
 
 /// <summary>

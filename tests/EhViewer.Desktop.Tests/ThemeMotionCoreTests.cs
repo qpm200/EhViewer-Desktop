@@ -4,7 +4,7 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Wave6MotionCorePerfTests
+public sealed class ThemeMotionCoreTests : DesktopTestBase
 {
     [Fact]
     public void AnimationTokens_InvalidatePreviousTokenAcrossInterruptions()
@@ -118,11 +118,8 @@ public sealed class Wave6MotionCorePerfTests
     [Fact]
     public void StaticSourceInvariants_EnsureGpuSliderAndSingleTitleBarWrite()
     {
-        string repoRoot = LocateRepositoryRoot();
-        string motionHelperPath = Path.Combine(
-            repoRoot, "src", "EhViewer.Desktop", "Services", "Theming", "ThemeMotionHelper.cs");
-        string mainWindowCsPath = Path.Combine(
-            repoRoot, "src", "EhViewer.Desktop", "MainWindow.xaml.cs");
+        string motionHelperPath = ResolveDesktopSourceFile("Services", "Theming", "ThemeMotionHelper.cs");
+        string mainWindowCsPath = ResolveDesktopSourceFile("MainWindow.xaml.cs");
 
         Assert.True(File.Exists(motionHelperPath), $"Missing {motionHelperPath}");
         Assert.True(File.Exists(mainWindowCsPath), $"Missing {mainWindowCsPath}");
@@ -145,21 +142,5 @@ public sealed class Wave6MotionCorePerfTests
         Assert.Contains("applyTitleBarColors: false", mainWindowSource, StringComparison.Ordinal);
         Assert.Contains("SetSliderThumbPositionImmediate", mainWindowSource, StringComparison.Ordinal);
         Assert.Contains("AnimateSliderThumbPosition", mainWindowSource, StringComparison.Ordinal);
-    }
-
-    private static string LocateRepositoryRoot()
-    {
-        string? dir = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(dir))
-        {
-            if (File.Exists(Path.Combine(dir, "EhViewer.Desktop.slnx")))
-            {
-                return dir;
-            }
-
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        throw new InvalidOperationException("Unable to locate EhViewer.Desktop.slnx from AppContext.BaseDirectory.");
     }
 }

@@ -12,28 +12,13 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Batch5ReaderParityTests : IDisposable
+public sealed class ReaderParityTests : DesktopTestBase
 {
     private readonly string _root;
 
-    public Batch5ReaderParityTests()
+    public ReaderParityTests()
     {
-        _root = Path.Combine(Path.GetTempPath(), "EhViewerBatch5Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
+        _root = CreateTempDirectory("eh-reader-parity");
     }
 
     [Fact]

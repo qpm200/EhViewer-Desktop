@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -35,9 +37,11 @@ public sealed class LlamaCppServerManager : IDisposable
     private readonly object _resolveCacheGate = new();
 
     private Process? _process;
+    private ChildProcessJobObject? _jobObject;
     private string? _runningServerPath;
     private string? _runningModelPath;
-    private int _runningPort;
+    private int _configuredPort;
+    private int _activePort;
     private int _runningGpuLayers;
     private long _lastHealthSuccessTimestamp;
     private string? _cachedConfiguredServerPath;
@@ -77,8 +81,38 @@ public sealed class LlamaCppServerManager : IDisposable
         {
             lock (_procGate)
             {
-                return _runningPort;
+                return _activePort;
             }
+        }
+    }
+
+    internal static int FindFreePort(int preferredPort)
+    {
+        int clamped = Math.Clamp(preferredPort, 1025, 65534);
+        if (IsPortAvailable(clamped))
+        {
+            return clamped;
+        }
+
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        int ephemeralPort = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return ephemeralPort;
+    }
+
+    private static bool IsPortAvailable(int port)
+    {
+        try
+        {
+            using var listener = new TcpListener(IPAddress.Loopback, port);
+            listener.Start();
+            listener.Stop();
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
         }
     }
 
@@ -464,23 +498,26 @@ public sealed class LlamaCppServerManager : IDisposable
                 "未找到 llama-server.exe。请先在设置中自动下载 llama.cpp 或浏览选择本地 llama-server.exe。");
         }
 
-        int port = Math.Clamp(settings.LocalLlamaPort is > 1024 and < 65535 ? settings.LocalLlamaPort : 8766, 1025, 65534);
+        int configuredPort = Math.Clamp(settings.LocalLlamaPort is > 1024 and < 65535 ? settings.LocalLlamaPort : 8766, 1025, 65534);
         int gpuLayers = settings.LocalLlamaGpuLayers;
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (IsReusableRunningInstance(serverPath, modelPath, port, gpuLayers))
+            if (IsReusableRunningInstance(serverPath, modelPath, configuredPort, gpuLayers))
             {
+                int reusablePort = ActivePort;
                 long lastHealthTs = Volatile.Read(ref _lastHealthSuccessTimestamp);
                 if (IsWithinHealthCacheTtl(lastHealthTs, Stopwatch.GetTimestamp(), HealthProbeCacheTtl) ||
-                    await ProbeHealthAsync(port, cancellationToken).ConfigureAwait(false))
+                    await ProbeHealthAsync(reusablePort, cancellationToken).ConfigureAwait(false))
                 {
-                    return new Uri($"http://127.0.0.1:{port}");
+                    return new Uri($"http://127.0.0.1:{reusablePort}");
                 }
             }
 
             StopServerCore();
+
+            int activePort = FindFreePort(configuredPort);
 
             lock (_procGate)
             {
@@ -490,7 +527,7 @@ public sealed class LlamaCppServerManager : IDisposable
             var psi = new ProcessStartInfo
             {
                 FileName = serverPath,
-                Arguments = $"--model \"{modelPath}\" --host 127.0.0.1 --port {port} --ctx-size 2048 --n-gpu-layers {gpuLayers}",
+                Arguments = $"--model \"{modelPath}\" --host 127.0.0.1 --port {activePort} --ctx-size 2048 --n-gpu-layers {gpuLayers}",
                 WorkingDirectory = Path.GetDirectoryName(serverPath) ?? _paths.DefaultLlamaCppDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -503,6 +540,7 @@ public sealed class LlamaCppServerManager : IDisposable
             var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             process.OutputDataReceived += (_, e) => CaptureOutputLine(e.Data);
             process.ErrorDataReceived += (_, e) => CaptureOutputLine(e.Data);
+            ChildProcessJobObject? jobObject = null;
 
             try
             {
@@ -511,21 +549,38 @@ public sealed class LlamaCppServerManager : IDisposable
                     throw new InvalidOperationException("无法启动 llama-server.exe 进程。");
                 }
 
+                jobObject = ChildProcessJobObject.TryCreate();
+                jobObject?.TryAssignProcess(process);
+
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
             }
             catch
             {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch
+                {
+                }
+
                 process.Dispose();
+                jobObject?.Dispose();
                 throw;
             }
 
             lock (_procGate)
             {
                 _process = process;
+                _jobObject = jobObject;
                 _runningServerPath = serverPath;
                 _runningModelPath = modelPath;
-                _runningPort = port;
+                _configuredPort = configuredPort;
+                _activePort = activePort;
                 _runningGpuLayers = gpuLayers;
                 Volatile.Write(ref _lastHealthSuccessTimestamp, 0);
             }
@@ -558,9 +613,9 @@ public sealed class LlamaCppServerManager : IDisposable
                             : $"llama-server 进程已停止。{tail}");
                     }
 
-                    if (await ProbeHealthAsync(port, cancellationToken).ConfigureAwait(false))
+                    if (await ProbeHealthAsync(activePort, cancellationToken).ConfigureAwait(false))
                     {
-                        return new Uri($"http://127.0.0.1:{port}");
+                        return new Uri($"http://127.0.0.1:{activePort}");
                     }
 
                     await Task.Delay(350, cancellationToken).ConfigureAwait(false);
@@ -751,14 +806,15 @@ public sealed class LlamaCppServerManager : IDisposable
         }
     }
 
-    private bool IsReusableRunningInstance(string serverPath, string modelPath, int port, int gpuLayers)
+    private bool IsReusableRunningInstance(string serverPath, string modelPath, int configuredPort, int gpuLayers)
     {
         lock (_procGate)
         {
             return _process is { HasExited: false } &&
+                   _activePort > 0 &&
                    string.Equals(_runningServerPath, serverPath, StringComparison.OrdinalIgnoreCase) &&
                    string.Equals(_runningModelPath, modelPath, StringComparison.OrdinalIgnoreCase) &&
-                   _runningPort == port &&
+                   _configuredPort == configuredPort &&
                    _runningGpuLayers == gpuLayers;
         }
     }
@@ -766,53 +822,71 @@ public sealed class LlamaCppServerManager : IDisposable
     private void StopServerCore()
     {
         Process? proc;
+        ChildProcessJobObject? jobObject;
         lock (_procGate)
         {
             proc = _process;
+            jobObject = _jobObject;
             _process = null;
+            _jobObject = null;
             _runningServerPath = null;
             _runningModelPath = null;
-            _runningPort = 0;
+            _configuredPort = 0;
+            _activePort = 0;
             _runningGpuLayers = 0;
             Volatile.Write(ref _lastHealthSuccessTimestamp, 0);
         }
 
-        if (proc is null)
-        {
-            return;
-        }
-
         try
         {
-            proc.CancelOutputRead();
-        }
-        catch (InvalidOperationException)
-        {
-        }
-
-        try
-        {
-            proc.CancelErrorRead();
-        }
-        catch (InvalidOperationException)
-        {
-        }
-
-        try
-        {
-            if (!proc.HasExited)
+            if (proc is null)
             {
-                proc.Kill(entireProcessTree: true);
-                proc.WaitForExit(2000);
+                return;
             }
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogDebug(ex, "Error stopping llama-server process");
+
+            try
+            {
+                proc.CancelOutputRead();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            try
+            {
+                proc.CancelErrorRead();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            try
+            {
+                if (!proc.HasExited)
+                {
+                    proc.Kill(entireProcessTree: true);
+                    proc.WaitForExit(2000);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogDebug(ex, "Error stopping llama-server process");
+            }
+            finally
+            {
+                proc.Dispose();
+            }
         }
         finally
         {
-            proc.Dispose();
+            try
+            {
+                jobObject?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogDebug(ex, "Error disposing llama-server job object");
+            }
         }
     }
 
@@ -841,5 +915,153 @@ public sealed class LlamaCppServerManager : IDisposable
                 ? string.Empty
                 : string.Join(" | ", _stderrTail);
         }
+    }
+
+    internal sealed class ChildProcessJobObject : IDisposable
+    {
+        private const int JobObjectExtendedLimitInformation = 9;
+        private const uint JobObjectLimitKillOnJobClose = 0x00002000;
+
+        private IntPtr _handle;
+        private int _disposed;
+
+        internal static int ExtendedLimitInformationSize => Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>();
+
+        private ChildProcessJobObject(IntPtr handle)
+        {
+            _handle = handle;
+        }
+
+        public static ChildProcessJobObject? TryCreate()
+        {
+            IntPtr handle = CreateJobObjectW(IntPtr.Zero, null);
+            if (handle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+            {
+                BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+                {
+                    LimitFlags = JobObjectLimitKillOnJobClose
+                }
+            };
+
+            int length = Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>();
+            IntPtr ptr = Marshal.AllocHGlobal(length);
+            try
+            {
+                Marshal.StructureToPtr(info, ptr, fDeleteOld: false);
+                if (!SetInformationJobObject(handle, JobObjectExtendedLimitInformation, ptr, (uint)length))
+                {
+                    CloseHandle(handle);
+                    return null;
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+
+            return new ChildProcessJobObject(handle);
+        }
+
+        public bool TryAssignProcess(Process process)
+        {
+            if (process is null || Volatile.Read(ref _disposed) != 0)
+            {
+                return false;
+            }
+
+            IntPtr handle = Volatile.Read(ref _handle);
+            if (handle == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (process.HasExited)
+                {
+                    return false;
+                }
+
+                return AssignProcessToJobObject(handle, process.Handle);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            IntPtr handle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
+            if (handle != IntPtr.Zero)
+            {
+                CloseHandle(handle);
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize;
+            public UIntPtr MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinity;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+            public IO_COUNTERS IoInfo;
+            public UIntPtr ProcessMemoryLimit;
+            public UIntPtr JobMemoryLimit;
+            public UIntPtr PeakProcessMemoryUsed;
+            public UIntPtr PeakJobMemoryUsed;
+        }
+
+        [DllImport("kernel32.dll", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateJobObjectW(IntPtr lpJobAttributes, string? lpName);
+
+        [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetInformationJobObject(
+            IntPtr hJob,
+            int jobObjectInfoClass,
+            IntPtr lpJobObjectInfo,
+            uint cbJobObjectInfoLength);
+
+        [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseHandle(IntPtr hObject);
     }
 }

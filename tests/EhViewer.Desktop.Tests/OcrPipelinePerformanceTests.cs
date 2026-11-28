@@ -6,30 +6,8 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class Wave5OcrPerfTests : IDisposable
+public sealed class OcrPipelinePerformanceTests : DesktopTestBase
 {
-    private readonly string _root;
-
-    public Wave5OcrPerfTests()
-    {
-        _root = Path.Combine(Path.GetTempPath(), "EhViewerWave5OcrTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_root);
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            if (Directory.Exists(_root))
-            {
-                Directory.Delete(_root, recursive: true);
-            }
-        }
-        catch
-        {
-        }
-    }
-
     [Theory]
     [InlineData(0, 1)]
     [InlineData(1, 1)]
@@ -66,7 +44,7 @@ public sealed class Wave5OcrPerfTests : IDisposable
     [Fact]
     public async Task PreCancelledCancellationToken_ThrowsImmediatelyWithoutLeakingSessionGate()
     {
-        AppPaths paths = AppPaths.CreateAt(Path.Combine(_root, "cancel-gate"));
+        AppPaths paths = CreateTempAppPaths("ocr-cancel-gate", ensureCreated: false);
         using var pipeline = new ComicBubbleOcrPipeline(paths);
         DecodedPixelBuffer pixels = CreateSyntheticPixelBuffer(8, 8);
 

@@ -140,77 +140,41 @@ public sealed class ReadingRefreshRateTests
 }
 
 /// <summary>Guards the translation of <c>download/DownloadGalleryMetaHelper.java</c>.</summary>
-public sealed class DownloadGalleryMetaHelperTests
+public sealed class DownloadGalleryMetaHelperTests : DesktopTestBase
 {
     [Fact]
     public void ExistingFolder_ReportsItsOwnTimestamp()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            var info = new GalleryInfo { Gid = 42, Title = "Test Gallery" };
-            string folder = DownloadManager.BuildGalleryFolder(root, info);
-            Directory.CreateDirectory(folder);
+        string root = CreateTempDirectory("ehv-meta");
+        var info = new GalleryInfo { Gid = 42, Title = "Test Gallery" };
+        string folder = DownloadManager.BuildGalleryFolder(root, info);
+        Directory.CreateDirectory(folder);
 
-            long timestamp = DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: 1);
+        long timestamp = DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: 1);
 
-            Assert.True(timestamp > 1);
-            long folderCreation = new DateTimeOffset(
-                Directory.GetCreationTimeUtc(folder), TimeSpan.Zero).ToUnixTimeMilliseconds();
-            Assert.Equal(folderCreation, timestamp);
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        Assert.True(timestamp > 1);
+        long folderCreation = new DateTimeOffset(
+            Directory.GetCreationTimeUtc(folder), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        Assert.Equal(folderCreation, timestamp);
     }
 
     [Fact]
     public void MissingFolder_FallsBackToTaskTime()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            var info = new GalleryInfo { Gid = 7, Title = "Missing" };
+        string root = CreateTempDirectory("ehv-meta");
+        var info = new GalleryInfo { Gid = 7, Title = "Missing" };
 
-            long timestamp = DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: 123456);
+        long timestamp = DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: 123456);
 
-            Assert.Equal(123456, timestamp);
-        }
-        finally
-        {
-            Cleanup(root);
-        }
+        Assert.Equal(123456, timestamp);
     }
 
     [Fact]
     public void NegativeTaskTime_IsClampedToZero()
     {
-        string root = CreateTempRoot();
-        try
-        {
-            var info = new GalleryInfo { Gid = 8, Title = "Clamp" };
+        string root = CreateTempDirectory("ehv-meta");
+        var info = new GalleryInfo { Gid = 8, Title = "Clamp" };
 
-            Assert.Equal(0, DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: -50));
-        }
-        finally
-        {
-            Cleanup(root);
-        }
-    }
-
-    private static string CreateTempRoot()
-    {
-        string root = Path.Combine(Path.GetTempPath(), "EhViewerTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        return root;
-    }
-
-    private static void Cleanup(string root)
-    {
-        if (Directory.Exists(root))
-        {
-            Directory.Delete(root, recursive: true);
-        }
+        Assert.Equal(0, DownloadGalleryMetaHelper.GetGalleryDirectoryTimestamp(root, info, taskTimeMillis: -50));
     }
 }

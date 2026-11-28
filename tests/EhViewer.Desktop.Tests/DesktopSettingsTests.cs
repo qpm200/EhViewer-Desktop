@@ -7,12 +7,12 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class DesktopSettingsBatch1Tests
+public sealed class DesktopSettingsTests : DesktopTestBase
 {
     [Fact]
     public void DesktopSettingsStore_RoundTripsExtendedSettingsAndTabs()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -53,14 +53,14 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 
     [Fact]
     public void UConfigSyncService_AppliesAndPullsSettings()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -88,14 +88,14 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 
     [Fact]
     public void SettingsViewModel_AutoSavesNavigationDrawerPreferences()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -121,7 +121,7 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 
@@ -159,7 +159,7 @@ public sealed class DesktopSettingsBatch1Tests
     [Fact]
     public void SettingsViewModel_PersistsUiThemeSelectionAndFallsBackWhenMissing()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -202,7 +202,7 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 
@@ -252,7 +252,7 @@ public sealed class DesktopSettingsBatch1Tests
     [Fact]
     public void SettingsViewModel_PersistsMiuixThemeRoundTrip()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -277,7 +277,7 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 
@@ -353,7 +353,7 @@ public sealed class DesktopSettingsBatch1Tests
     [Fact]
     public void SettingsViewModel_PersistsBossKeyAndAutoLockRoundTrip()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
+        string tempRoot = CreateTempDirectory("eh-settings");
         AppPaths paths = AppPaths.CreateAt(tempRoot);
         try
         {
@@ -388,7 +388,7 @@ public sealed class DesktopSettingsBatch1Tests
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            
         }
     }
 

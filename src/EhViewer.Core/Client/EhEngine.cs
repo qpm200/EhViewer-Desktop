@@ -43,11 +43,16 @@ public sealed partial class EhEngine
         IEhClientSettings settings)
     {
         ArgumentNullException.ThrowIfNull(clientFactory);
+        ArgumentNullException.ThrowIfNull(cookieStore);
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(settings);
+
         _getHttpClient = () => clientFactory.StandardClient;
-        _cookieStore = cookieStore ?? throw new ArgumentNullException(nameof(cookieStore));
-        _database = database ?? throw new ArgumentNullException(nameof(database));
-        _filter = filter ?? throw new ArgumentNullException(nameof(filter));
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _cookieStore = cookieStore;
+        _database = database;
+        _filter = filter;
+        _settings = settings;
     }
 
     public EhEngine(
@@ -58,11 +63,16 @@ public sealed partial class EhEngine
         IEhClientSettings settings)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(cookieStore);
+        ArgumentNullException.ThrowIfNull(database);
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(settings);
+
         _getHttpClient = () => httpClient;
-        _cookieStore = cookieStore ?? throw new ArgumentNullException(nameof(cookieStore));
-        _database = database ?? throw new ArgumentNullException(nameof(database));
-        _filter = filter ?? throw new ArgumentNullException(nameof(filter));
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _cookieStore = cookieStore;
+        _database = database;
+        _filter = filter;
+        _settings = settings;
     }
 
     public event Action<string>? EventPaneReceived;

@@ -23,7 +23,7 @@ namespace EhViewer.Core.Tests.NetworkTests;
 /// and at-rest encryption, TLS certificate rejection against a real loopback self-signed server,
 /// and multi-hop 3xx cookie capture through <see cref="EhHttpClientFactory"/>.
 /// </summary>
-public sealed class NetworkAndSecurityTests
+public sealed class NetworkAndSecurityTests : TempDirectoryTestBase
 {
     // ------------------------------------------------------------------
     // 1. Architecture boundary guard (EhViewer.Core must stay UI/Skia-free)
@@ -307,7 +307,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_Get_ReturnsStoredAddress_AndNullWhenMissing()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hosts = new HostsDatabase(temp.File("hosts.db"));
 
         Assert.Null(hosts.Get("ni.hao"));
@@ -324,7 +324,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_Put_InsertsThenUpdates()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hosts = new HostsDatabase(temp.File("hosts.db"));
 
         Assert.Null(hosts.Get("ni.hao"));
@@ -350,7 +350,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_Delete_RemovesEntry()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hosts = new HostsDatabase(temp.File("hosts.db"));
 
         Assert.True(hosts.Put("ni.hao", "127.0.0.1"));
@@ -371,7 +371,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_GetAll_ReturnsEntriesInInsertionOrder()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hosts = new HostsDatabase(temp.File("hosts.db"));
 
         Assert.Empty(hosts.GetAll());
@@ -391,7 +391,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_GetList_ReturnsEveryRowForHost()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("hosts.db");
         using (var hosts = new HostsDatabase(dbPath))
         {
@@ -416,7 +416,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_Clear_RemovesAllRows()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hosts = new HostsDatabase(temp.File("hosts.db"));
 
         Assert.True(hosts.Put("ni.hao", "127.0.0.1"));
@@ -431,7 +431,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_PersistsAcrossReopen()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("hosts.db");
 
         using (var hosts = new HostsDatabase(dbPath))
@@ -450,7 +450,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_IpLiteral_ShortCircuitsWithoutDns()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         int resolverCalls = 0;
         using var hosts = new EhHosts(
@@ -472,7 +472,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_CustomHostsDatabase_TakesPriorityOverBuiltInAndDns()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         Assert.True(hostsDb.Put("e-hentai.org", "127.0.0.9"));
 
@@ -493,7 +493,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_CustomHostsDatabase_ReturnsEveryRow()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("hosts.db");
         using var hostsDb = new HostsDatabase(dbPath);
         Assert.True(hostsDb.Put("custom.example", "10.1.2.3"));
@@ -514,7 +514,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_BuiltInCommonHosts_ReturnsTableIps()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -538,7 +538,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_BuiltInExHosts_ReturnsTableIps()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -559,7 +559,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_BuiltInHostsDisabled_FallsBackToSystemDns()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -589,7 +589,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_SystemDnsEmpty_ThrowsSocketException()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -610,7 +610,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_DnsOverHttps_ParsesAAndAaaaRecords()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -650,7 +650,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_DnsOverHttps_ServerError_FallsBackToSystemDns()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -679,7 +679,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_DnsOverHttps_ServfailResponse_FallsBackToSystemDns()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -707,7 +707,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_BuiltInTableIncludesBothIpv4AndIpv6()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -736,7 +736,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_PersistentCookies_SurviveReopen_SessionCookiesDoNot()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var urlEh = new Uri("http://www.ehviewer.com/");
         var urlNmb = new Uri("http://h.nimingban.com/");
@@ -776,7 +776,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_SaveFromResponse_ReplacesExistingCookie()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("http://www.ehviewer.com/");
 
@@ -799,7 +799,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_ExpiredCookie_RemovesPersistentRow()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("http://www.ehviewer.com/");
 
@@ -822,7 +822,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_NonPersistentCookie_ReplacingPersistent_RemovesRow()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("http://www.ehviewer.com/");
 
@@ -847,7 +847,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_Clear_RemovesCookiesAndRows()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("http://www.ehviewer.com/");
 
@@ -873,7 +873,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_GetCookies_SortsByPathLengthDescending()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var url = new Uri("http://www.ehviewer.com/long/long/long/");
 
@@ -895,7 +895,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_ValuesAreEncryptedAtRest()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("https://e-hentai.org/");
         const string secret = "SUPER_SECRET_COOKIE_VALUE";
@@ -916,7 +916,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_PlaintextRows_AreDeletedOnLoad_FailClosed()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("https://e-hentai.org/");
         long future = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeMilliseconds();
@@ -948,7 +948,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_ImportFromDatabase_MigratesPlaintextAndroidDatabase()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string androidDb = temp.File("okhttp3-cookie.db");
         string targetDb = temp.File("cookie.db");
         long future = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeMilliseconds();
@@ -986,7 +986,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_ImportFromDatabase_RejectsUnprotectedSourceWhenDisallowed()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string androidDb = temp.File("okhttp3-cookie.db");
         long future = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeMilliseconds();
 
@@ -1005,7 +1005,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_LoadForRequest_InjectsTipsCookieForEDomain()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var eUrl = new Uri("https://e-hentai.org/g/123/abc/");
 
@@ -1024,7 +1024,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_LoadForRequest_DoesNotInjectTipsCookieForOtherHosts()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var exUrl = new Uri("https://exhentai.org/");
 
@@ -1040,7 +1040,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_LoadForRequest_StripsUconfigAndNwOnEDomain()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var eUrl = new Uri("https://e-hentai.org/");
 
@@ -1067,7 +1067,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_HasSignedIn_RequiresMemberIdAndPassHash()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var eUrl = new Uri(EhUrl.HostE);
 
@@ -1088,7 +1088,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_GetCookieHeader_JoinsNameValuePairsLongestPathFirst()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var url = new Uri("https://example.com/sub/page");
 
@@ -1109,7 +1109,7 @@ public sealed class NetworkAndSecurityTests
     [InlineData("", false, false)]
     public void CookieStore_SaveFromResponse_ParsesUpstreamCookieShapes(string header, bool parses, bool persistent)
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var store = new SqliteCookieStore(temp.File("cookie.db"));
         var url = new Uri("https://example.com/");
 
@@ -1133,7 +1133,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void CookieStore_SaveFromResponse_MaxAgeZeroDeletesCookie()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
         var url = new Uri("https://example.com/");
 
@@ -1154,7 +1154,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task HttpClientFactory_RejectsSelfSignedLoopbackCertificate()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var tlsServer = new LoopbackTlsServer();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         using var cookieStore = new SqliteCookieStore(temp.File("cookie.db"));
@@ -1185,7 +1185,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task HttpClientFactory_RejectsSelfSignedCertificateForLocalhostHostname()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var tlsServer = new LoopbackTlsServer();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         using var cookieStore = new SqliteCookieStore(temp.File("cookie.db"));
@@ -1220,7 +1220,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task HttpClientFactory_PersistsCookiesFromEveryRedirectHop()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string dbPath = temp.File("cookie.db");
 
         using var server = new LoopbackHttpServer(path => path switch
@@ -1274,7 +1274,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task HttpClientFactory_ImageClient_DoesNotFollowRedirects()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
 
         using var server = new LoopbackHttpServer(path => path switch
         {
@@ -1313,7 +1313,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task HttpClientFactory_StopsAfterMaximumRedirects()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
 
         using var server = new LoopbackHttpServer(path =>
             LoopbackResponse.Found("/loop", $"hop={Uri.EscapeDataString(path)}; Path=/; Max-Age=3600"));
@@ -1343,7 +1343,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task SqliteCookieStore_EnablesWal_And_HttpClientFactory_ReusesInvokersAcrossRequests()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var server = new LoopbackHttpServer(path => LoopbackResponse.Ok($"ok:{path}"));
 
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
@@ -1379,7 +1379,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public void HostsDatabase_EnablesWalAndHostIndex()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         string hostsDbPath = temp.File("hosts.db");
         using (var hostsDb = new HostsDatabase(hostsDbPath))
         {
@@ -1409,7 +1409,7 @@ public sealed class NetworkAndSecurityTests
     [Fact]
     public async Task EhHosts_LookupAsync_DohCacheAndCoalescing_DeduplicatesConcurrentAndRepeatedQueries()
     {
-        using var temp = new TempDirectory();
+        using var temp = CreateTempScope();
         using var hostsDb = new HostsDatabase(temp.File("hosts.db"));
         var settings = new EhClientSettings
         {
@@ -1581,38 +1581,15 @@ public sealed class NetworkAndSecurityTests
         return Convert.ToInt32(cmd.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    /// <summary>Temporary scratch directory removed on dispose (best effort).</summary>
-    private sealed class TempDirectory : IDisposable
+    private TempDirectory CreateTempScope() => new(CreateTempDirectory("ehviewer-net"));
+
+    /// <summary>Temporary scratch directory backed by <see cref="TempDirectoryTestBase"/>.</summary>
+    private readonly record struct TempDirectory(string Path) : IDisposable
     {
-        public TempDirectory()
-        {
-            Path = System.IO.Path.Combine(
-                System.IO.Path.GetTempPath(),
-                "ehviewer-tests",
-                Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(Path);
-        }
-
-        public string Path { get; }
-
         public string File(string name) => System.IO.Path.Combine(Path, name);
 
         public void Dispose()
         {
-            try
-            {
-                if (Directory.Exists(Path))
-                {
-                    Directory.Delete(Path, recursive: true);
-                }
-            }
-            catch (IOException)
-            {
-                // Best effort only: SQLite handles may still be closing on Windows.
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
         }
     }
 

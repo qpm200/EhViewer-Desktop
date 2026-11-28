@@ -11,7 +11,7 @@ using Xunit;
 
 namespace EhViewer.Desktop.Tests;
 
-public sealed class MangaTranslationTests
+public sealed class MangaTranslationTests : DesktopTestBase
 {
     [Fact]
     public void OcrRegionClusterer_MergesVerticalJapaneseColumnsRightToLeftAndKeepsSeparateBubblesIsolated()
@@ -84,8 +84,7 @@ public sealed class MangaTranslationTests
     [Fact]
     public async Task LlamaCppServerManager_DownloadResumesFromExistingPartFile()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
-        AppPaths paths = AppPaths.CreateAt(tempRoot);
+        AppPaths paths = CreateTempAppPaths("manga-llama-resume", ensureCreated: false);
         Directory.CreateDirectory(paths.ModelsDirectory);
         string dest = Path.Combine(paths.ModelsDirectory, "sakura-test.gguf");
         await File.WriteAllBytesAsync(dest + ".part", Encoding.ASCII.GetBytes("HEADER_"));
@@ -102,24 +101,14 @@ public sealed class MangaTranslationTests
             return resp;
         });
 
-        try
-        {
-            using var http = new HttpClient(handler);
-            using var mgr = new LlamaCppServerManager(paths, http);
-            string saved = await mgr.DownloadSakuraModelAsync(useMirror: false, dest);
+        using var http = new HttpClient(handler);
+        using var mgr = new LlamaCppServerManager(paths, http);
+        string saved = await mgr.DownloadSakuraModelAsync(useMirror: false, dest);
 
-            Assert.Equal(7, seenRangeStart);
-            Assert.Equal(dest, saved);
-            Assert.False(File.Exists(dest + ".part"));
-            Assert.Equal("HEADER_BODY_PAYLOAD", await File.ReadAllTextAsync(dest));
-        }
-        finally
-        {
-            if (Directory.Exists(tempRoot))
-            {
-                Directory.Delete(tempRoot, recursive: true);
-            }
-        }
+        Assert.Equal(7, seenRangeStart);
+        Assert.Equal(dest, saved);
+        Assert.False(File.Exists(dest + ".part"));
+        Assert.Equal("HEADER_BODY_PAYLOAD", await File.ReadAllTextAsync(dest));
     }
 
     [Fact]
@@ -211,69 +200,58 @@ public sealed class MangaTranslationTests
     [Fact]
     public void SettingsViewModel_PersistsOcrSakuraAndProtectedCustomApiKeyRoundTrip()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
-        AppPaths paths = AppPaths.CreateAt(tempRoot);
-        try
+        AppPaths paths = CreateTempAppPaths("manga-settings-roundtrip", ensureCreated: false);
+        using (AppServices services = AppServices.Create(paths))
         {
-            using (AppServices services = AppServices.Create(paths))
-            {
-                Assert.NotNull(services.GetRequiredService<ComicBubbleOcrPipeline>());
-                Assert.NotNull(services.GetRequiredService<MangaOcrService>());
-                Assert.NotNull(services.GetRequiredService<LlamaCppServerManager>());
-                Assert.NotNull(services.GetRequiredService<MangaTranslationPipeline>());
+            Assert.NotNull(services.GetRequiredService<ComicBubbleOcrPipeline>());
+            Assert.NotNull(services.GetRequiredService<MangaOcrService>());
+            Assert.NotNull(services.GetRequiredService<LlamaCppServerManager>());
+            Assert.NotNull(services.GetRequiredService<MangaTranslationPipeline>());
 
-                var vm = new SettingsViewModel(services);
-                vm.ReaderOcrLanguageIndex = 1; // ja
-                vm.ReaderTranslationProviderIndex = 1; // llama-sakura
-                vm.ReaderTranslationAutoFallback = false;
-                vm.EnableLocalSakuraModel = true;
-                vm.UseHfMirrorForModelDownload = false;
-                vm.LocalLlamaGpuLayers = 28;
-                vm.LocalLlamaPort = 8899;
-                vm.LocalLlamaBackendIndex = 1; // cuda
-                vm.CustomTranslationEndpoint = "https://custom-llm.local/v1";
-                vm.CustomTranslationModel = "sakura-custom";
-                vm.DeepSeekEndpoint = "https://api.deepseek.com";
-                vm.DeepSeekModel = "deepseek-reasoner";
-                vm.DeepSeekReasoningEffortIndex = 0; // low
-                vm.Save();
-                vm.SaveCustomTranslationApiKey("sk-secret-key-999");
-                vm.SaveDeepSeekApiKey("sk-deepseek-secret-777");
+            var vm = new SettingsViewModel(services);
+            vm.ReaderOcrLanguageIndex = 1; // ja
+            vm.ReaderTranslationProviderIndex = 1; // llama-sakura
+            vm.ReaderTranslationAutoFallback = false;
+            vm.EnableLocalSakuraModel = true;
+            vm.UseHfMirrorForModelDownload = false;
+            vm.LocalLlamaGpuLayers = 28;
+            vm.LocalLlamaPort = 8899;
+            vm.LocalLlamaBackendIndex = 1; // cuda
+            vm.CustomTranslationEndpoint = "https://custom-llm.local/v1";
+            vm.CustomTranslationModel = "sakura-custom";
+            vm.DeepSeekEndpoint = "https://api.deepseek.com";
+            vm.DeepSeekModel = "deepseek-reasoner";
+            vm.DeepSeekReasoningEffortIndex = 0; // low
+            vm.Save();
+            vm.SaveCustomTranslationApiKey("sk-secret-key-999");
+            vm.SaveDeepSeekApiKey("sk-deepseek-secret-777");
 
-                Assert.NotNull(services.Settings.CustomTranslationApiKeyProtected);
-                Assert.DoesNotContain("sk-secret-key-999", services.Settings.CustomTranslationApiKeyProtected, StringComparison.Ordinal);
-                Assert.True(DpapiCredentialProtector.Instance.IsProtected(services.Settings.CustomTranslationApiKeyProtected));
-                Assert.NotNull(services.Settings.DeepSeekApiKeyProtected);
-                Assert.DoesNotContain("sk-deepseek-secret-777", services.Settings.DeepSeekApiKeyProtected, StringComparison.Ordinal);
-                Assert.True(DpapiCredentialProtector.Instance.IsProtected(services.Settings.DeepSeekApiKeyProtected));
-            }
-
-            using (AppServices reloaded = AppServices.Create(paths))
-            {
-                var vm2 = new SettingsViewModel(reloaded);
-                Assert.Equal(1, vm2.ReaderOcrLanguageIndex);
-                Assert.Equal(1, vm2.ReaderTranslationProviderIndex);
-                Assert.False(vm2.ReaderTranslationAutoFallback);
-                Assert.True(vm2.EnableLocalSakuraModel);
-                Assert.False(vm2.UseHfMirrorForModelDownload);
-                Assert.Equal(28, vm2.LocalLlamaGpuLayers);
-                Assert.Equal(8899, vm2.LocalLlamaPort);
-                Assert.Equal(1, vm2.LocalLlamaBackendIndex);
-                Assert.Equal("https://custom-llm.local/v1", vm2.CustomTranslationEndpoint);
-                Assert.Equal("sakura-custom", vm2.CustomTranslationModel);
-                Assert.Contains("DPAPI", vm2.CustomTranslationApiKeyStatus, StringComparison.Ordinal);
-                Assert.Equal("https://api.deepseek.com", vm2.DeepSeekEndpoint);
-                Assert.Equal("deepseek-reasoner", vm2.DeepSeekModel);
-                Assert.Equal(0, vm2.DeepSeekReasoningEffortIndex);
-                Assert.Contains("DPAPI", vm2.DeepSeekApiKeyStatus, StringComparison.Ordinal);
-            }
+            Assert.NotNull(services.Settings.CustomTranslationApiKeyProtected);
+            Assert.DoesNotContain("sk-secret-key-999", services.Settings.CustomTranslationApiKeyProtected, StringComparison.Ordinal);
+            Assert.True(DpapiCredentialProtector.Instance.IsProtected(services.Settings.CustomTranslationApiKeyProtected));
+            Assert.NotNull(services.Settings.DeepSeekApiKeyProtected);
+            Assert.DoesNotContain("sk-deepseek-secret-777", services.Settings.DeepSeekApiKeyProtected, StringComparison.Ordinal);
+            Assert.True(DpapiCredentialProtector.Instance.IsProtected(services.Settings.DeepSeekApiKeyProtected));
         }
-        finally
+
+        using (AppServices reloaded = AppServices.Create(paths))
         {
-            if (Directory.Exists(tempRoot))
-            {
-                Directory.Delete(tempRoot, recursive: true);
-            }
+            var vm2 = new SettingsViewModel(reloaded);
+            Assert.Equal(1, vm2.ReaderOcrLanguageIndex);
+            Assert.Equal(1, vm2.ReaderTranslationProviderIndex);
+            Assert.False(vm2.ReaderTranslationAutoFallback);
+            Assert.True(vm2.EnableLocalSakuraModel);
+            Assert.False(vm2.UseHfMirrorForModelDownload);
+            Assert.Equal(28, vm2.LocalLlamaGpuLayers);
+            Assert.Equal(8899, vm2.LocalLlamaPort);
+            Assert.Equal(1, vm2.LocalLlamaBackendIndex);
+            Assert.Equal("https://custom-llm.local/v1", vm2.CustomTranslationEndpoint);
+            Assert.Equal("sakura-custom", vm2.CustomTranslationModel);
+            Assert.Contains("DPAPI", vm2.CustomTranslationApiKeyStatus, StringComparison.Ordinal);
+            Assert.Equal("https://api.deepseek.com", vm2.DeepSeekEndpoint);
+            Assert.Equal("deepseek-reasoner", vm2.DeepSeekModel);
+            Assert.Equal(0, vm2.DeepSeekReasoningEffortIndex);
+            Assert.Contains("DPAPI", vm2.DeepSeekApiKeyStatus, StringComparison.Ordinal);
         }
     }
 
@@ -338,22 +316,13 @@ public sealed class MangaTranslationTests
             ComicBubbleOcrPipeline.ScoreRecognitionCandidate("...", -0.05, 0.90f, stoppedByLoopGuard: false));
 
         // Legacy v1 model detection
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
-        try
+        AppPaths legacyPaths = CreateTempAppPaths("manga-legacy-v1", ensureCreated: false);
+        Directory.CreateDirectory(legacyPaths.OcrModelsDirectory);
+        File.WriteAllBytes(Path.Combine(legacyPaths.OcrModelsDirectory, "manga-ocr-encoder.onnx"), [1, 2, 3]);
+        using (var pipeline = new ComicBubbleOcrPipeline(legacyPaths))
         {
-            AppPaths legacyPaths = AppPaths.CreateAt(tempRoot);
-            Directory.CreateDirectory(legacyPaths.OcrModelsDirectory);
-            File.WriteAllBytes(Path.Combine(legacyPaths.OcrModelsDirectory, "manga-ocr-encoder.onnx"), [1, 2, 3]);
-            using var pipeline = new ComicBubbleOcrPipeline(legacyPaths);
             Assert.False(pipeline.AreAllModelsReady);
             Assert.True(pipeline.HasLegacyV1Models);
-        }
-        finally
-        {
-            if (Directory.Exists(tempRoot))
-            {
-                Directory.Delete(tempRoot, recursive: true);
-            }
         }
 
         // Tight text_bubble crop should not expand outward enough to drag oval borders in
@@ -422,29 +391,18 @@ public sealed class MangaTranslationTests
             return;
         }
 
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
-        AppPaths emptyPaths = AppPaths.CreateAt(tempRoot);
-        try
-        {
-            using var pipeline = new ComicBubbleOcrPipeline(emptyPaths);
-            Assert.False(pipeline.AreAllModelsReady);
-            var ocr = new MangaOcrService(pipeline);
+        AppPaths emptyPaths = CreateTempAppPaths("manga-empty-ocr", ensureCreated: false);
+        using var pipeline = new ComicBubbleOcrPipeline(emptyPaths);
+        Assert.False(pipeline.AreAllModelsReady);
+        var ocr = new MangaOcrService(pipeline);
 
-            using var bmp = new SKBitmap(200, 200, SKColorType.Bgra8888, SKAlphaType.Premul);
-            DecodedPixelBuffer? pixels = SkiaBitmapHelper.ExtractBgraPixels(bmp);
-            Assert.NotNull(pixels);
+        using var bmp = new SKBitmap(200, 200, SKColorType.Bgra8888, SKAlphaType.Premul);
+        DecodedPixelBuffer? pixels = SkiaBitmapHelper.ExtractBgraPixels(bmp);
+        Assert.NotNull(pixels);
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                ocr.RecognizeAsync("empty:0", pixels!, "ja", "Test"));
-            Assert.Contains("漫画专用离线 OCR", ex.Message, StringComparison.Ordinal);
-        }
-        finally
-        {
-            if (Directory.Exists(tempRoot))
-            {
-                Directory.Delete(tempRoot, recursive: true);
-            }
-        }
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            ocr.RecognizeAsync("empty:0", pixels!, "ja", "Test"));
+        Assert.Contains("漫画专用离线 OCR", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -839,44 +797,30 @@ public sealed class MangaTranslationTests
     [Fact]
     public void TranslationCacheDatabase_PersistsEvictsOldestAndClears()
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"ehv-tcache-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        string tempDir = CreateTempDirectory("manga-tcache");
         string dbPath = Path.Combine(tempDir, "cache.db");
 
-        try
+        using (var db = new TranslationCacheDatabase(dbPath, maxRows: 64))
         {
-            using (var db = new TranslationCacheDatabase(dbPath, maxRows: 64))
+            for (int i = 0; i < 70; i++)
             {
-                for (int i = 0; i < 70; i++)
-                {
-                    db.Upsert($"key-{i:D3}", new TranslationResult($"译文{i}", "direct_mt", "传统直译", false));
-                }
-
-                Assert.True(db.GetEntryCount() <= 64);
-                Assert.True(db.TryGet("key-069", out TranslationResult? newest));
-                Assert.Equal("译文69", newest?.TranslatedText);
+                db.Upsert($"key-{i:D3}", new TranslationResult($"译文{i}", "direct_mt", "传统直译", false));
             }
 
-            // Re-open in fresh instance to verify persistence
-            using (var db2 = new TranslationCacheDatabase(dbPath, maxRows: 64))
-            {
-                Assert.True(db2.TryGet("key-069", out TranslationResult? persisted));
-                Assert.Equal("译文69", persisted?.TranslatedText);
-
-                db2.Clear();
-                Assert.Equal(0, db2.GetEntryCount());
-                Assert.False(db2.TryGet("key-069", out _));
-            }
+            Assert.True(db.GetEntryCount() <= 64);
+            Assert.True(db.TryGet("key-069", out TranslationResult? newest));
+            Assert.Equal("译文69", newest?.TranslatedText);
         }
-        finally
+
+        // Re-open in fresh instance to verify persistence
+        using (var db2 = new TranslationCacheDatabase(dbPath, maxRows: 64))
         {
-            try
-            {
-                Directory.Delete(tempDir, recursive: true);
-            }
-            catch
-            {
-            }
+            Assert.True(db2.TryGet("key-069", out TranslationResult? persisted));
+            Assert.Equal("译文69", persisted?.TranslatedText);
+
+            db2.Clear();
+            Assert.Equal(0, db2.GetEntryCount());
+            Assert.False(db2.TryGet("key-069", out _));
         }
     }
 
@@ -903,81 +847,67 @@ public sealed class MangaTranslationTests
     [Fact]
     public async Task MangaTranslationPipeline_GlossaryShortCircuitPromptContextAndPersistentCacheWork()
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"ehv-pipe-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        string tempDir = CreateTempDirectory("manga-pipe");
         string dbPath = Path.Combine(tempDir, "cache.db");
         string? capturedBody = null;
         int networkCalls = 0;
 
-        try
+        var settings = new DesktopSettings
         {
-            var settings = new DesktopSettings
+            ReaderTranslationProvider = TranslationProviderIds.CustomOpenAiCompatible,
+            CustomTranslationEndpoint = "https://api.example.com/v1",
+            CustomTranslationModel = "test-model",
+            ReaderTranslationAutoFallback = false,
+            TranslationGlossaryRules = "先輩=学长\nレイ=零酱"
+        };
+
+        var handler = new StubHttpMessageHandler(req =>
+        {
+            networkCalls++;
+            capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            const string json = """
+                {"choices":[{"message":{"content":"[1] レイ怎么了？\n[2] 快躲起来！"}}]}
+                """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                ReaderTranslationProvider = TranslationProviderIds.CustomOpenAiCompatible,
-                CustomTranslationEndpoint = "https://api.example.com/v1",
-                CustomTranslationModel = "test-model",
-                ReaderTranslationAutoFallback = false,
-                TranslationGlossaryRules = "先輩=学长\nレイ=零酱"
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
+        });
 
-            var handler = new StubHttpMessageHandler(req =>
-            {
-                networkCalls++;
-                capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-                const string json = """
-                    {"choices":[{"message":{"content":"[1] レイ怎么了？\n[2] 快躲起来！"}}]}
-                    """;
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-            });
+        using var httpClient = new HttpClient(handler);
+        var blocks = new List<OcrTextBlock>
+        {
+            new("b0", "先輩", 0.1, 0.1, 0.1, 0.1, false),
+            new("b1", "レイはどうした？", 0.2, 0.2, 0.2, 0.2, false),
+            new("b2", "早く隠れて！", 0.3, 0.3, 0.2, 0.2, false)
+        };
 
-            using var httpClient = new HttpClient(handler);
-            var blocks = new List<OcrTextBlock>
-            {
-                new("b0", "先輩", 0.1, 0.1, 0.1, 0.1, false),
-                new("b1", "レイはどうした？", 0.2, 0.2, 0.2, 0.2, false),
-                new("b2", "早く隠れて！", 0.3, 0.3, 0.2, 0.2, false)
-            };
+        using (var persistent = new TranslationCacheDatabase(dbPath))
+        {
+            var pipe = new MangaTranslationPipeline(null, () => settings, new DpapiCredentialProtector(), httpClient: httpClient, persistentCache: persistent);
+            var prevContext = new[] { "昨日のこと覚えてる？" };
+            IReadOnlyDictionary<string, TranslationResult> res = await pipe.TranslatePageBlocksAsync(blocks, prevContext);
 
-            using (var persistent = new TranslationCacheDatabase(dbPath))
-            {
-                var pipe = new MangaTranslationPipeline(null, () => settings, new DpapiCredentialProtector(), httpClient: httpClient, persistentCache: persistent);
-                var prevContext = new[] { "昨日のこと覚えてる？" };
-                IReadOnlyDictionary<string, TranslationResult> res = await pipe.TranslatePageBlocksAsync(blocks, prevContext);
-
-                Assert.Equal(3, res.Count);
-                Assert.Equal("学长", res["b0"].TranslatedText); // exact glossary short-circuit
-                Assert.Equal(1, networkCalls);
-                // Post-enforcement replaced leftover source "レイ" with "零酱"
-                Assert.Contains("零酱", res["b1"].TranslatedText, StringComparison.Ordinal);
-                Assert.NotNull(capturedBody);
-                string userPrompt = JsonNode.Parse(capturedBody!)!["messages"]![1]!["content"]!.GetValue<string>();
-                Assert.Contains("レイ => 零酱", userPrompt, StringComparison.Ordinal);
-                Assert.Contains("昨日のこと覚えてる？", userPrompt, StringComparison.Ordinal);
-            }
-
-            // Fresh pipeline reading same persistent SQLite database hits 0 network calls
-            using (var persistent2 = new TranslationCacheDatabase(dbPath))
-            {
-                var pipe2 = new MangaTranslationPipeline(null, () => settings, new DpapiCredentialProtector(), httpClient: httpClient, persistentCache: persistent2);
-                var prevContext = new[] { "昨日のこと覚えてる？" };
-                IReadOnlyDictionary<string, TranslationResult> cachedRes = await pipe2.TranslatePageBlocksAsync(blocks, prevContext);
-                Assert.Equal(3, cachedRes.Count);
-                Assert.Equal(1, networkCalls);
-                Assert.Equal("快躲起来！", cachedRes["b2"].TranslatedText);
-            }
+            Assert.Equal(3, res.Count);
+            Assert.Equal("学长", res["b0"].TranslatedText); // exact glossary short-circuit
+            Assert.Equal(1, networkCalls);
+            // Post-enforcement replaced leftover source "レイ" with "零酱"
+            Assert.Contains("零酱", res["b1"].TranslatedText, StringComparison.Ordinal);
+            Assert.NotNull(capturedBody);
+            string userPrompt = JsonNode.Parse(capturedBody!)!["messages"]![1]!["content"]!.GetValue<string>();
+            Assert.Contains("レイ => 零酱", userPrompt, StringComparison.Ordinal);
+            Assert.Contains("昨日のこと覚えてる？", userPrompt, StringComparison.Ordinal);
         }
-        finally
+
+        // Fresh pipeline reading same persistent SQLite database hits 0 network calls
+        using (var persistent2 = new TranslationCacheDatabase(dbPath))
         {
-            try
-            {
-                Directory.Delete(tempDir, recursive: true);
-            }
-            catch
-            {
-            }
+            var pipe2 = new MangaTranslationPipeline(null, () => settings, new DpapiCredentialProtector(), httpClient: httpClient, persistentCache: persistent2);
+            var prevContext = new[] { "昨日のこと覚えてる？" };
+            IReadOnlyDictionary<string, TranslationResult> cachedRes = await pipe2.TranslatePageBlocksAsync(blocks, prevContext);
+            Assert.Equal(3, cachedRes.Count);
+            Assert.Equal(1, networkCalls);
+            Assert.Equal("快躲起来！", cachedRes["b2"].TranslatedText);
         }
     }
 
@@ -1276,40 +1206,29 @@ public sealed class MangaTranslationTests
     [Fact]
     public async Task SettingsViewModel_TestTranslationAndProviderStatusWork()
     {
-        string tempRoot = Path.Combine(Path.GetTempPath(), "EhViewer.Desktop.Tests", Guid.NewGuid().ToString("N"));
-        AppPaths paths = AppPaths.CreateAt(tempRoot);
-        try
-        {
-            using AppServices services = AppServices.Create(paths);
-            var vm = new SettingsViewModel(services);
+        AppPaths paths = CreateTempAppPaths("manga-settings-test", ensureCreated: false);
+        using AppServices services = AppServices.Create(paths);
+        var vm = new SettingsViewModel(services);
 
-            // Switching to DeepSeek updates status message accurately rather than showing Sakura-7B missing
-            vm.ReaderTranslationProviderIndex = 3; // DeepSeek
-            Assert.Contains("DeepSeek AI 尚未配置 API Key", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
+        // Switching to DeepSeek updates status message accurately rather than showing Sakura-7B missing
+        vm.ReaderTranslationProviderIndex = 3; // DeepSeek
+        Assert.Contains("DeepSeek AI 尚未配置 API Key", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
 
-            vm.SaveDeepSeekApiKey("sk-ds-valid");
-            vm.RefreshOcrAndLocalModelStatus();
-            Assert.Contains("DeepSeek AI 已就绪", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
-            Assert.Contains("推理强度：low", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
+        vm.SaveDeepSeekApiKey("sk-ds-valid");
+        vm.RefreshOcrAndLocalModelStatus();
+        Assert.Contains("DeepSeek AI 已就绪", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
+        Assert.Contains("推理强度：low", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
 
-            // Glossary exact rules allow TestTranslationPipelineAsync to verify continuous test output formatting offline
-            // and prove RefreshOcrAndLocalModelStatus(preserveStatusMessage: true) does NOT overwrite the test result!
-            vm.TranslationGlossaryRules = "ちょっと待って！=等一下！\nそんなのダメだってば！=那样可不行啊！";
-            vm.Save();
-            await vm.TestTranslationPipelineAsync();
+        // Glossary exact rules allow TestTranslationPipelineAsync to verify continuous test output formatting offline
+        // and prove RefreshOcrAndLocalModelStatus(preserveStatusMessage: true) does NOT overwrite the test result!
+        vm.TranslationGlossaryRules = "ちょっと待って！=等一下！\nそんなのダメだってば！=那样可不行啊！";
+        vm.Save();
+        await vm.TestTranslationPipelineAsync();
 
-            Assert.Contains("单页连续试译成功", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
-            Assert.Contains("[1] 等一下！ / [2] 那样可不行啊！", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
-            Assert.False(vm.IsTestingTranslation);
-            Assert.True(vm.CanTestTranslation);
-        }
-        finally
-        {
-            if (Directory.Exists(tempRoot))
-            {
-                Directory.Delete(tempRoot, recursive: true);
-            }
-        }
+        Assert.Contains("单页连续试译成功", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
+        Assert.Contains("[1] 等一下！ / [2] 那样可不行啊！", vm.LocalTranslationStatusMessage, StringComparison.Ordinal);
+        Assert.False(vm.IsTestingTranslation);
+        Assert.True(vm.CanTestTranslation);
     }
 
     [Fact]
@@ -1411,38 +1330,27 @@ public sealed class MangaTranslationTests
         Assert.DoesNotContain("<think>", sanitized, StringComparison.OrdinalIgnoreCase);
 
         // Verify TranslationCacheDatabase.UpsertBatch persists in a single transaction
-        string tempDir = Path.Combine(Path.GetTempPath(), $"ehv-tbatch-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        string tempDir = CreateTempDirectory("manga-tbatch");
         string dbPath = Path.Combine(tempDir, "batch-cache.db");
-        try
+        using (var db = new TranslationCacheDatabase(dbPath, maxRows: 512))
         {
-            using (var db = new TranslationCacheDatabase(dbPath, maxRows: 512))
-            {
-                db.UpsertBatch(
-                [
-                    new KeyValuePair<string, TranslationResult>("k1", new TranslationResult("译1", "deepseek", "DeepSeek", false)),
-                    new KeyValuePair<string, TranslationResult>("k2", new TranslationResult("译2", "deepseek", "DeepSeek", false))
-                ]);
-                Assert.Equal(2, db.GetEntryCount());
-                Assert.True(db.TryGet("k1", out TranslationResult? r1));
-                Assert.Equal("译1", r1?.TranslatedText);
-                Assert.True(db.TryGet("k1", out TranslationResult? r1SecondHit));
-                Assert.Equal("译1", r1SecondHit?.TranslatedText);
-            }
-
-            using (var reopened = new TranslationCacheDatabase(dbPath, maxRows: 512))
-            {
-                Assert.Equal(2, reopened.GetEntryCount());
-                Assert.True(reopened.TryGet("k2", out TranslationResult? r2));
-                Assert.Equal("译2", r2?.TranslatedText);
-            }
+            db.UpsertBatch(
+            [
+                new KeyValuePair<string, TranslationResult>("k1", new TranslationResult("译1", "deepseek", "DeepSeek", false)),
+                new KeyValuePair<string, TranslationResult>("k2", new TranslationResult("译2", "deepseek", "DeepSeek", false))
+            ]);
+            Assert.Equal(2, db.GetEntryCount());
+            Assert.True(db.TryGet("k1", out TranslationResult? r1));
+            Assert.Equal("译1", r1?.TranslatedText);
+            Assert.True(db.TryGet("k1", out TranslationResult? r1SecondHit));
+            Assert.Equal("译1", r1SecondHit?.TranslatedText);
         }
-        finally
+
+        using (var reopened = new TranslationCacheDatabase(dbPath, maxRows: 512))
         {
-            if (Directory.Exists(tempDir))
-            {
-                Directory.Delete(tempDir, recursive: true);
-            }
+            Assert.Equal(2, reopened.GetEntryCount());
+            Assert.True(reopened.TryGet("k2", out TranslationResult? r2));
+            Assert.Equal("译2", r2?.TranslatedText);
         }
     }
 
